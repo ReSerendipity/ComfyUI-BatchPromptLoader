@@ -1,0 +1,6 @@
+*.pyc
+__pycache__
+*.md
+!README.md
+user/
+*.log
