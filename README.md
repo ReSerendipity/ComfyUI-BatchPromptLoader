@@ -6,7 +6,7 @@ ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件�
 
 ## 功能特性
 
-- 📁 从指定文件夹加载所有 `.txt` 提示词文件（自动按文件名排序）
+- 📁 从指定文件夹**递归**加载所有子文件夹中的 `.txt` 提示词文件（自动按路径排序）
 - 🎲 四种索引模式：`fixed`（固定）/ `increment`（递增）/ `decrement`（递减）/ `random`（随机）
 - 🔁 内置自动递增：每次 Queue 后自动切换下一个提示词，无需额外种子节点
 - 🧠 智能记忆：记录上次读取位置，重启 ComfyUI 后从上次位置继续
@@ -45,7 +45,7 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 
 ## 使用方法
 
-1. 准备提示词文件夹（如 `C:\prompts\SFW`），每个提示词一个 `.txt` 文件：
+1. 准备提示词文件夹（如 `C:\prompts\SFW`），每个提示词一个 `.txt` 文件（支持放在子文件夹中，会被递归扫描）：
 
    ```
    positive: 一位成熟的大学教授站在讲台上

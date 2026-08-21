@@ -51,8 +51,13 @@ class BatchPromptReaderWithClip:
         os.makedirs(target_dir, exist_ok=True)
         
         try:
-            all_files = os.listdir(target_dir)
-            txt_files = [f for f in all_files if f.endswith('.txt')]
+            # 递归扫描所有子文件夹中的 .txt 文件
+            txt_files = []
+            for root, dirs, files in os.walk(target_dir):
+                for f in files:
+                    if f.endswith('.txt'):
+                        rel_path = os.path.relpath(os.path.join(root, f), target_dir)
+                        txt_files.append(rel_path)
             txt_files.sort(key=lambda x: x.lower())
         except Exception as e:
             raise Exception(f"Failed to read folder: {target_dir}\nError: {str(e)}")
