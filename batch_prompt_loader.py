@@ -27,6 +27,14 @@ class BatchPromptReaderWithClip:
                     "step": 1,
                     "control_after_generate": ["fixed", "increment", "decrement", "random"]
                 }),
+                "recursive": ("BOOLEAN", {
+                    "default": True,
+                    "label": "递归扫描子文件夹"
+                }),
+                "reverse_order": ("BOOLEAN", {
+                    "default": False,
+                    "label": "倒序排列文件"
+                }),
             },
             "hidden": {
                 "extra_pnginfo": "EXTRA_PNGINFO",
@@ -40,7 +48,7 @@ class BatchPromptReaderWithClip:
     OUTPUT_NODE = True
     CATEGORY = "batch_tools"
     
-    def read_and_encode(self, clip, folder_path, current_number, extra_pnginfo=None, unique_id=None):
+    def read_and_encode(self, clip, folder_path, current_number, recursive=True, reverse_order=False, extra_pnginfo=None, unique_id=None):
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         
         if os.path.isabs(folder_path):
@@ -51,16 +59,39 @@ class BatchPromptReaderWithClip:
         os.makedirs(target_dir, exist_ok=True)
         
         try:
-            # 递归扫描所有子文件夹中的 .txt 文件
+            # 根据 recursive 参数选择扫描方式
             txt_files = []
-            for root, dirs, files in os.walk(target_dir):
-                for f in files:
-                    if f.endswith('.txt'):
-                        rel_path = os.path.relpath(os.path.join(root, f), target_dir)
-                        txt_files.append(rel_path)
+            if recursive:
+                # 递归扫描所有子文件夹中的 .txt 文件
+                for root, dirs, files in os.walk(target_dir):
+                    for f in files:
+                        if f.endswith('.txt'):
+                            rel_path = os.path.relpath(os.path.join(root, f), target_dir)
+                            txt_files.append(rel_path)
+            else:
+                # 只读取根目录下的 .txt 文件
+                all_files = os.listdir(target_dir)
+                txt_files = [f for f in all_files if f.endswith('.txt')]
+            
+            # 排序
             txt_files.sort(key=lambda x: x.lower())
+            
+            # 倒序处理
+            if reverse_order:
+                txt_files.reverse()
         except Exception as e:
             raise Exception(f"Failed to read folder: {target_dir}\nError: {str(e)}")
+
+            try:
+                all_files = os.listdir(target_dir)
+                txt_files_non_recursive = [f for f in all_files if f.endswith('.txt')]
+                txt_files_non_recursive.sort(key=lambda x: x.lower())
+                txt_files = txt_files_non_recursive
+            except Exception as e:
+                raise Exception(f"Failed to read folder: {target_dir}\nError: {str(e)}")
+        
+        if reverse_order:
+            txt_files.reverse()
         
         if len(txt_files) == 0:
             raise Exception(f"Folder is empty: {target_dir}\n\nPlease add TXT prompt files")
