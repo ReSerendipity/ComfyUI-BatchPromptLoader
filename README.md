@@ -6,9 +6,10 @@ ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件�
 
 ## 功能特性
 
-- 📁 从指定文件夹**递归**加载所有子文件夹中的 `.txt` 提示词文件（自动按路径排序）
+- 📁 从指定文件夹加载 `.txt` 提示词文件（支持**递归**扫描子文件夹，可开关）
 - 🎲 四种索引模式：`fixed`（固定）/ `increment`（递增）/ `decrement`（递减）/ `random`（随机）
 - 🔁 内置自动递增：每次 Queue 后自动切换下一个提示词，无需额外种子节点
+- 🔃 支持**倒序**排列文件
 - 🧠 智能记忆：记录上次读取位置，重启 ComfyUI 后从上次位置继续
 - ✂️ 自动拆分正负提示词：支持 `positive:` / `negative:` 段
 
@@ -25,6 +26,8 @@ ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件�
 | `clip` | CLIP | 来自 CLIP Loader |
 | `folder_path` | STRING | TXT 提示词所在文件夹路径（绝对路径或相对于 ComfyUI 根目录） |
 | `current_number` | INT | 当前提示词索引（配合"自动更新该值之后"菜单使用） |
+| `recursive` | BOOLEAN | 是否递归扫描子文件夹中的 `.txt` 文件（默认开启） |
+| `reverse_order` | BOOLEAN | 是否倒序排列文件（默认关闭） |
 
 ### 输出
 
@@ -65,6 +68,12 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 4. 在 `current_number` 上右键，选择 **"递增值"**（或递减/随机）。
 
 5. 每次点击 Queue，节点会自动读取下一个提示词并编码。
+
+### 文件排序说明
+
+- 文件按路径**字典序**（不区分大小写）排列，即先按英文字母 A→Z，再按数字逐位比较（如 `10.txt` 排在 `2.txt` 之前，因为字符 `"1"` 排在 `"2"` 之前）
+- 开启 `recursive` 时，子文件夹的文件会**排在其父文件夹文件之后**（按子文件夹名的字典序）
+- 开启 `reverse_order` 可对整个文件列表倒序
 
 ### 控制台输出示例
 
