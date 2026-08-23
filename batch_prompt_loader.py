@@ -20,14 +20,14 @@ class BatchPromptReaderWithClip:
                 "folder_path": ("STRING", {
                     "default": "input/batch_prompts",
                     "multiline": False,
-                    "label": "文件夹路径"
+                    "label": "Folder Path"
                 }),
                 "current_number": ("INT", {
                     "default": 0,
                     "min": 0,
                     "max": 999999,
                     "step": 1,
-                    "control_after_generate": ["fixed", "increment", "decrement", "random"],`n                    "label": "当前编号 (自动递增)"
+                    "control_after_generate": ["fixed", "increment", "decrement", "random"]
                 }),
                 "recursive": ("BOOLEAN", {
                     "default": True,
