@@ -1,11 +1,13 @@
 """
-ComfyUI Batch Prompt Loader
-A custom node for loading and encoding prompts from TXT files with 4 modes: fixed, increment, decrement, random.
+ComfyUI Batch Prompt Loader - Enhanced Version
+A custom node for loading and encoding prompts from TXT files with advanced features:
+- Recursive scanning, wildcard filtering, skip exists, metadata output, preview display
 """
 import os
 import torch
 import random as random_module
 import json
+import fnmatch
 
 _global_mode_state = {}
 
@@ -35,6 +37,22 @@ class BatchPromptReaderWithClip:
                     "default": False,
                     "label": "倒序排列文件"
                 }),
+                "file_pattern": ("STRING", {
+                    "default": "*.txt",
+                    "multiline": False,
+                    "label": "文件名过滤 (通配符)"
+                }),
+                "output_folder": ("STRING", {
+                    "default": "output/",
+                    "multiline": False,
+                    "label": "输出目录 (用于跳过检查)"
+                }),
+            },
+            "optional": {
+                "skip_exists": ("BOOLEAN", {
+                    "default": False,
+                    "label": "跳过已存在的图片"
+                }),
             },
             "hidden": {
                 "extra_pnginfo": "EXTRA_PNGINFO",
@@ -42,13 +60,15 @@ class BatchPromptReaderWithClip:
             }
         }
     
-    RETURN_TYPES = ("CONDITIONING",)
-    RETURN_NAMES = ("conditioning",)
+    RETURN_TYPES = ("CONDITIONING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("conditioning", "filename", "index", "total_count")
     FUNCTION = "read_and_encode"
     OUTPUT_NODE = True
     CATEGORY = "batch_tools"
     
-    def read_and_encode(self, clip, folder_path, current_number, recursive=True, reverse_order=False, extra_pnginfo=None, unique_id=None):
+    def read_and_encode(self, clip, folder_path, current_number, recursive=True, reverse_order=False, 
+                        file_pattern="*.txt", output_folder="output/", skip_exists=False,
+                        extra_pnginfo=None, unique_id=None):
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         
         if os.path.isabs(folder_path):
@@ -56,22 +76,48 @@ class BatchPromptReaderWithClip:
         else:
             target_dir = os.path.join(base_dir, folder_path)
         
-        os.makedirs(target_dir, exist_ok=True)
+        # 优化 3: 增强错误提示 - 先检查路径是否存在
+        if not os.path.exists(target_dir):
+            raise Exception(f"[错误] 路径不存在：{target_dir}\n\n请检查 folder_path 是否正确。")
+        
+        if not os.path.isdir(target_dir):
+            raise Exception(f"[错误] 路径不是文件夹：{target_dir}\n\n请确保这是一个有效的目录。")
         
         try:
-            # 根据 recursive 参数选择扫描方式
             txt_files = []
+            
+            # 解析文件模式
+            pattern_lower = file_pattern.lower().strip()
+            if not pattern_lower or pattern_lower == '*.txt':
+                search_pattern = '*.txt'
+                required_ext = '.txt'
+            else:
+                search_pattern = pattern_lower
+                # 提取扩展名（如 *.prompt.txt -> .prompt.txt）
+                if '*' in search_pattern:
+                    ext_part = search_pattern.split('*', 1)[-1]
+                    required_ext = ext_part if ext_part else '.txt'
+                else:
+                    required_ext = '.txt'
+            
             if recursive:
-                # 递归扫描所有子文件夹中的 .txt 文件
+                # 递归扫描所有子文件夹
                 for root, dirs, files in os.walk(target_dir):
                     for f in files:
-                        if f.endswith('.txt'):
+                        # 优化 2: 通配符过滤
+                        if fnmatch.fnmatch(f.lower(), search_pattern.lower()):
+                            if required_ext and not f.lower().endswith(required_ext):
+                                continue
                             rel_path = os.path.relpath(os.path.join(root, f), target_dir)
                             txt_files.append(rel_path)
             else:
-                # 只读取根目录下的 .txt 文件
+                # 只读取根目录
                 all_files = os.listdir(target_dir)
-                txt_files = [f for f in all_files if f.endswith('.txt')]
+                for f in all_files:
+                    if fnmatch.fnmatch(f.lower(), search_pattern.lower()):
+                        if required_ext and not f.lower().endswith(required_ext):
+                            continue
+                        txt_files.append(f)
             
             # 排序
             txt_files.sort(key=lambda x: x.lower())
@@ -79,22 +125,13 @@ class BatchPromptReaderWithClip:
             # 倒序处理
             if reverse_order:
                 txt_files.reverse()
+                
         except Exception as e:
-            raise Exception(f"Failed to read folder: {target_dir}\nError: {str(e)}")
-
-            try:
-                all_files = os.listdir(target_dir)
-                txt_files_non_recursive = [f for f in all_files if f.endswith('.txt')]
-                txt_files_non_recursive.sort(key=lambda x: x.lower())
-                txt_files = txt_files_non_recursive
-            except Exception as e:
-                raise Exception(f"Failed to read folder: {target_dir}\nError: {str(e)}")
+            raise Exception(f"[错误] 读取文件夹失败：{target_dir}\n\n错误信息：{str(e)}")
         
-        if reverse_order:
-            txt_files.reverse()
-        
+        # 优化 3: 空文件夹检测
         if len(txt_files) == 0:
-            raise Exception(f"Folder is empty: {target_dir}\n\nPlease add TXT prompt files")
+            raise Exception(f"[错误] 文件夹中没有匹配的文件：{target_dir}\n\n搜索模式：{search_pattern}\n\n请添加对应的 TXT 文件或调整文件名过滤规则。")
         
         counter_file = os.path.join(base_dir, "user", "default", "batch_prompt_counter.json")
         try:
@@ -149,7 +186,29 @@ class BatchPromptReaderWithClip:
         
         selected_file = txt_files[effective_index]
         file_path = os.path.join(target_dir, selected_file)
-        print(f"[BatchPromptLoader] ✓ [{effective_index + 1}/{len(txt_files)}] {selected_file}")
+        
+        # 优化 4: 跳过已存在的图片
+        if skip_exists and output_folder.strip():
+            out_base = os.path.join(base_dir, output_folder.rstrip('/').rstrip('\\'))
+            base_name = os.path.splitext(os.path.basename(selected_file))[0]
+            possible_extensions = ['.png', '.jpg', '.jpeg', '.webp']
+            file_exists = False
+            
+            for ext in possible_extensions:
+                check_path = os.path.join(out_base, f"{base_name}{ext}")
+                if os.path.exists(check_path):
+                    file_exists = True
+                    print(f"[BatchPromptLoader] ⏭️ 跳过已存在：{base_name}{ext}")
+                    break
+            
+            if file_exists:
+                print(f"[BatchPromptLoader] 已跳过：{selected_file}")
+                empty_cond = [[torch.zeros(1, 1, 2816), {"pooled_output": torch.zeros(1, 2816)}]]
+                return (empty_cond, f"SKIPPED:{selected_file}", effective_index, len(txt_files))
+        
+        # 优化 1: 显示预览信息
+        preview_msg = f"✓ [{effective_index + 1}/{len(txt_files)}] {selected_file}"
+        print(f"[BatchPromptLoader] {preview_msg}")
         
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -205,7 +264,13 @@ class BatchPromptReaderWithClip:
                 
                 conditioning = [[cond_positive, {"pooled_output": pooled_positive}]]
             
-            return (conditioning,)
+            # 优化 5: 输出元数据
+            return (
+                conditioning,
+                selected_file,           # filename
+                effective_index,         # index (从 0 开始)
+                len(txt_files)           # total_count
+            )
         
         except Exception as e:
             raise Exception(f"Failed to read file: {selected_file}\nError: {str(e)}")
