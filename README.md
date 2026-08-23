@@ -69,6 +69,45 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 
 重启 ComfyUI 后，在画布中右键搜索 `BatchPromptLoader` 或 `批量提示词编码器`。
 
+> 💡 **汉化说明**：节点名称已汉化为"批量提示词加载器"，但参数标签保持英文（行业惯例）。请参考下方的中英对照表快速上手。
+
+## 📋 参数中英对照表
+
+### 输入参数
+
+| 英文参数名 | 中文含义 | 类型 | 默认值 | 使用说明 |
+|-----------|---------|------|--------|----------|
+| `clip` | CLIP 模型 | CLIP | (必填) | 从 CLIP Loader 连接过来 |
+| `folder_path` | 文件夹路径 | STRING | `input/batch_prompts` | TXT 提示词所在的文件夹 |
+| `current_number` | 当前编号 | INT | `0` | 从第几个文件开始（配合右键菜单的递增/递减/随机） |
+| `recursive` | 递归扫描子文件夹 | BOOLEAN | `True` | ✅ 开：包含所有子目录<br>❌ 关：只读根目录 |
+| `reverse_order` | 倒序排列文件 | BOOLEAN | `False` | ✅ 开：从后往前读（Z→A）<br>❌ 关：正常顺序（A→Z） |
+| `file_pattern` | 文件名过滤模式 | STRING | `*.txt` | 通配符，如 `SFW_*.txt`, `*_v2.txt` |
+| `output_folder` | 输出目录 | STRING | `output/` | 图片保存位置（用于跳过检查） |
+
+### 可选输入
+
+| 英文参数名 | 中文含义 | 类型 | 默认值 | 使用说明 |
+|-----------|---------|------|--------|----------|
+| `skip_exists` | 跳过已存在的图片 | BOOLEAN | `False` | ✅ 开：不重复生成同名图片 |
+
+### 输出口
+
+| 英文输出口 | 中文含义 | 类型 | 用途 |
+|-----------|---------|------|------|
+| `conditioning` | 条件编码 | CONDITIONING | 连到 KSampler |
+| `filename` | 文件名 | STRING | 可连到 Save Image 的 `filename_prefix` |
+| `index` | 索引号 | INT | 当前是第几个文件（从 0 开始） |
+| `total_count` | 总文件数 | INT | 总共扫描到多少个文件 |
+
+### 💡 快速记忆
+
+- **核心参数**：`folder_path`（哪里找）→ `current_number`（从哪开始）→ `conditioning`（输出）
+- **常用开关**：`recursive`（要不要扫子目录）、`reverse_order`（要不要倒着读）
+- **高级功能**：`file_pattern`（筛选特定文件）、`skip_exists`（跳过已生成的）
+
+> ℹ️ **为什么参数是英文？** ComfyUI 生态中，自定义节点的参数名通常保持英文，这是行业标准做法，方便全球用户交流和资源共享。节点名称已汉化，一眼就能认出功能。
+
 > 💡 **新特性提示**：v2.0 新增通配符过滤、跳过已存在、元数据输出等功能！
 > 无第三方依赖，仅需 ComfyUI 自带的 PyTorch 环境。
 
