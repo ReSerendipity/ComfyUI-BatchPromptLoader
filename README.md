@@ -9,6 +9,7 @@ ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件�
 - 📁 **递归扫描**：自动扫描文件夹及所有子文件夹中的提示词文件
 - 🔍 **通配符过滤**：支持 `*.txt`, `SFW_*.txt` 等文件名模式匹配
 - ⏭️ **跳过已存在**：可选跳过已生成的图片，避免重复渲染
+- 📋 **外置日志记录**：自动记录已处理的提示词文件，下次运行自动跳过（可外置清除/选择性删除日志）
 - 💬 **实时预览**：控制台显示当前文件和总数 `[n/total] filename`
 - 🎯 **元数据输出**：输出文件名、索引、总数供后续节点使用
 - 🎲 四种索引模式：`fixed`（固定）/ `increment`（递增）/ `decrement`（递减）/ `random`（随机）
@@ -16,6 +17,22 @@ ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件�
 - 🔃 支持**倒序**排列文件
 - 🧠 智能记忆：记录上次读取位置，重启 ComfyUI 后从上次位置继续
 - ✂️ 自动拆分正负提示词：支持 `positive:` / `negative:` 段
+
+## 🆕 版本更新 (v2.1)
+
+### 新增功能
+
+- ✅ 外置日志记录（`enable_logging` + `log_folder` + `clear_log_on_start`）
+- ✅ 自动跳过已处理过的提示词文件（中断后重跑不重复生成）
+- ✅ 日志文件夹可外置清除或选择性删除（每个文件一个 JSON）
+
+### 输入参数
+
+| 英文参数名 | 中文含义 | 类型 | 默认值 | 使用说明 |
+|-----------|---------|------|--------|----------|
+| `enable_logging` | 启用日志记录 | BOOLEAN | `False` | ✅ 开：记录已处理文件并自动跳过<br>❌ 关：不记录 |
+| `log_folder` | 日志文件夹 | STRING | `user/default/batch_prompt_logs` | 日志存放位置（可填绝对路径） |
+| `clear_log_on_start` | 会话启动时清空日志 | BOOLEAN | `False` | ✅ 开：每次启动 ComfyUI 后第一次运行时清空日志 |
 
 ## 🆕 版本更新 (v2.0)
 
@@ -44,6 +61,9 @@ ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件�
 | `reverse_order` | BOOLEAN | 是否倒序排列文件（默认关闭） |
 | `file_pattern` | STRING | 文件名过滤模式，支持通配符（如 `*.txt`, `SFW_*.txt`, `*_v2.txt`，默认 `*.txt`） |
 | `output_folder` | STRING | 输出目录路径（用于跳过检查，默认 `output/`） |
+| `enable_logging` | BOOLEAN | 是否启用外置日志记录，记录已处理文件并自动跳过（默认关闭） |
+| `log_folder` | STRING | 日志文件夹路径（默认 `user/default/batch_prompt_logs`，可填绝对路径） |
+| `clear_log_on_start` | BOOLEAN | 会话启动后第一次运行时清空日志（默认关闭） |
 
 ### 可选输入
 
@@ -104,11 +124,11 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 
 - **核心参数**：`folder_path`（哪里找）→ `current_number`（从哪开始）→ `conditioning`（输出）
 - **常用开关**：`recursive`（要不要扫子目录）、`reverse_order`（要不要倒着读）
-- **高级功能**：`file_pattern`（筛选特定文件）、`skip_exists`（跳过已生成的）
+- **高级功能**：`file_pattern`（筛选特定文件）、`skip_exists`（跳过已生成的）、`enable_logging`（日志记录，自动跳过已处理）
 
 > ℹ️ **为什么参数是英文？** ComfyUI 生态中，自定义节点的参数名通常保持英文，这是行业标准做法，方便全球用户交流和资源共享。节点名称已汉化，一眼就能认出功能。
 
-> 💡 **新特性提示**：v2.0 新增通配符过滤、跳过已存在、元数据输出等功能！
+> 💡 **新特性提示**：v2.1 新增外置日志记录，自动跳过已处理文件！v2.0 新增通配符过滤、跳过已存在、元数据输出等功能！
 > 无第三方依赖，仅需 ComfyUI 自带的 PyTorch 环境。
 
 ## 使用方法
@@ -175,6 +195,44 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 - `index` - 可以用于显示进度或调试
 - `total_count` - 显示总共有多少个文件
 
+### 高级功能 4：外置日志记录（自动跳过已处理）
+
+> 💡 **解决什么问题？** 批量生成 100 个提示词，跑到一半意外中断。重新运行时，如果不加处理会重复生成前面已完成的图片。开启日志记录后，节点会**记住哪些文件已经处理过，下次自动跳过**。
+
+#### 使用步骤
+
+1. 开启 `enable_logging` 开关
+2. （可选）设置 `log_folder` 为日志存放位置，默认在 `ComfyUI/user/default/batch_prompt_logs`
+3. 正常批量运行。每次节点成功编码一个提示词后，会自动在日志文件夹写入一个 JSON 文件
+4. 中断后重新运行，节点读取日志，**自动跳过已处理的文件**，只处理剩余文件
+5. 全部处理完后，再次运行会提示"所有提示词已处理完成"（输出口 filename 返回 `ALL_DONE`）
+
+#### 日志文件说明
+
+- 每个已处理的提示词文件对应一个 JSON 日志文件，文件名与提示词文件对应（如 `子目录_提示词A.txt` → `子目录_提示词A.json`）
+- 日志内容示例：
+
+  ```json
+  {
+    "prompt_file": "子目录/提示词A.txt",
+    "source_dir": "C:\\ComfyUI\\input\\batch_prompts",
+    "index": 0,
+    "total_count": 100,
+    "processed_at": "2026-08-25 10:30:00"
+  }
+  ```
+
+#### 如何清除 / 选择性删除日志？
+
+- **全部清除**：直接删除整个 `log_folder` 文件夹（或其中的所有 JSON 文件），下次运行从头开始
+- **选择性删除**：想重新生成某个提示词，只需删除对应的那个 JSON 日志文件即可
+- **自动清空**：开启 `clear_log_on_start`，则每次启动 ComfyUI 后的第一次运行会自动清空日志（适合换了一批新提示词、想整体重来）
+
+⚠️ **注意**：
+- 日志按"节点成功编码该提示词"记录。若图片生成中途失败（如显存不足），请手动删除对应日志条目后重试
+- 不同 `folder_path` 的日志会按来源目录自动区分，互不干扰
+- `skip_exists`（按图片是否存在判断）与 `enable_logging`（按日志判断）是两套独立机制，可同时开启
+
 ### 控制台输出示例
 
 ```
@@ -211,6 +269,13 @@ A: 检查 `folder_path` 是否正确，确认文件夹内是否有符合 `file_p
 A: 控制台会输出 `[n/total] filename`，或者将 `total_count` 输出口连接到 Display Int 节点查看。
 
 ## Changelog
+
+### v2.1 (2026-08-25)
+
+- ✨ 新增外置日志记录 (`enable_logging`, `log_folder`, `clear_log_on_start`)
+- ✨ 记录已处理的提示词文件，下次运行自动跳过（中断后重跑不重复）
+- ✨ 日志文件夹可外置清除 / 选择性删除（每个文件一个 JSON）
+- ✨ 全部处理完提示"所有提示词已处理完成"（filename 返回 `ALL_DONE`）
 
 ### v2.0 (2026-08-23)
 

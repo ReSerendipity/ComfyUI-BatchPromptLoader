@@ -2,14 +2,64 @@
 ComfyUI Batch Prompt Loader - Enhanced Version
 A custom node for loading and encoding prompts from TXT files with advanced features:
 - Recursive scanning, wildcard filtering, skip exists, metadata output, preview display
+- External log recording: records which prompt files have been processed, and auto-skips them next run
 """
 import os
 import torch
 import random as random_module
 import json
 import fnmatch
+import time
 
 _global_mode_state = {}
+_log_cleared_this_session = False
+
+
+def _sanitize_log_name(rel_path):
+    """将相对路径转为安全的日志文件名（替换路径分隔符和非法字符）"""
+    name = rel_path.replace('\\', '_').replace('/', '_')
+    for ch in '<>:"/\\|?*':
+        name = name.replace(ch, '_')
+    return name
+
+
+def _load_log(log_dir, source_dir):
+    """读取日志文件夹中匹配当前来源目录的已处理文件集合"""
+    processed = set()
+    if not os.path.isdir(log_dir):
+        return processed
+    try:
+        for fn in os.listdir(log_dir):
+            if not fn.endswith('.json'):
+                continue
+            try:
+                with open(os.path.join(log_dir, fn), 'r', encoding='utf-8') as f:
+                    entry = json.load(f)
+                if entry.get('source_dir') == source_dir and entry.get('prompt_file'):
+                    processed.add(entry['prompt_file'])
+            except Exception:
+                continue
+    except Exception as e:
+        print(f"[BatchPromptLoader] Warning: 读取日志失败: {e}")
+    return processed
+
+
+def _write_log(log_dir, source_dir, prompt_file, index, total_count):
+    """将已处理的提示词文件写入日志（每个文件一个 JSON，便于选择性删除）"""
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        log_name = _sanitize_log_name(prompt_file) + '.json'
+        entry = {
+            "prompt_file": prompt_file,
+            "source_dir": source_dir,
+            "index": index,
+            "total_count": total_count,
+            "processed_at": time.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        with open(os.path.join(log_dir, log_name), 'w', encoding='utf-8') as f:
+            json.dump(entry, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[BatchPromptLoader] Warning: 写入日志失败: {e}")
 
 class BatchPromptReaderWithClip:
     @classmethod
@@ -48,6 +98,19 @@ class BatchPromptReaderWithClip:
                     "multiline": False,
                     "label": "输出目录 (用于跳过检查)"
                 }),
+                "enable_logging": ("BOOLEAN", {
+                    "default": False,
+                    "label": "启用日志记录 (跳过已处理)"
+                }),
+                "log_folder": ("STRING", {
+                    "default": "user/default/batch_prompt_logs",
+                    "multiline": False,
+                    "label": "日志文件夹 (外置可清除)"
+                }),
+                "clear_log_on_start": ("BOOLEAN", {
+                    "default": False,
+                    "label": "会话启动时清空日志"
+                }),
             },
             "optional": {
                 "skip_exists": ("BOOLEAN", {
@@ -69,6 +132,7 @@ class BatchPromptReaderWithClip:
     
     def read_and_encode(self, clip, folder_path, current_number, recursive=True, reverse_order=False, 
                         file_pattern="*.txt", output_folder="output/", skip_exists=False,
+                        enable_logging=False, log_folder="user/default/batch_prompt_logs", clear_log_on_start=False,
                         extra_pnginfo=None, unique_id=None):
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         
@@ -133,6 +197,37 @@ class BatchPromptReaderWithClip:
         # 优化 3: 空文件夹检测
         if len(txt_files) == 0:
             raise Exception(f"[错误] 文件夹中没有匹配的文件：{target_dir}\n\n搜索模式：{search_pattern}\n\n请添加对应的 TXT 文件或调整文件名过滤规则。")
+        
+        # 优化 6: 外置日志记录 - 跳过已处理过的提示词文件
+        log_dir = None
+        if enable_logging:
+            if os.path.isabs(log_folder):
+                log_dir = log_folder
+            else:
+                log_dir = os.path.join(base_dir, log_folder)
+            
+            # 会话启动后第一次运行时清空日志（配合 clear_log_on_start）
+            global _log_cleared_this_session
+            if clear_log_on_start and not _log_cleared_this_session:
+                try:
+                    if os.path.isdir(log_dir):
+                        for fn in os.listdir(log_dir):
+                            if fn.endswith('.json'):
+                                os.remove(os.path.join(log_dir, fn))
+                    _log_cleared_this_session = True
+                    print("[BatchPromptLoader] 🧹 已清空日志文件夹（会话启动后第一次运行）")
+                except Exception as e:
+                    print(f"[BatchPromptLoader] Warning: 清空日志失败: {e}")
+            
+            processed_files = _load_log(log_dir, os.path.normpath(target_dir))
+            if processed_files:
+                remaining = [f for f in txt_files if f not in processed_files]
+                print(f"[BatchPromptLoader] 📋 日志过滤：已跳过 {len(txt_files) - len(remaining)} 个已处理文件，剩余 {len(remaining)} 个待处理")
+                if not remaining:
+                    print("[BatchPromptLoader] ✅ 所有提示词已处理完成（清除日志文件夹可重新开始）")
+                    empty_cond = [[torch.zeros(1, 1, 2816), {"pooled_output": torch.zeros(1, 2816)}]]
+                    return (empty_cond, "ALL_DONE", 0, 0)
+                txt_files = remaining
         
         counter_file = os.path.join(base_dir, "user", "default", "batch_prompt_counter.json")
         try:
@@ -204,6 +299,8 @@ class BatchPromptReaderWithClip:
             
             if file_exists:
                 print(f"[BatchPromptLoader] 已跳过：{selected_file}")
+                if enable_logging:
+                    _write_log(log_dir, os.path.normpath(target_dir), selected_file, effective_index, len(txt_files))
                 empty_cond = [[torch.zeros(1, 1, 2816), {"pooled_output": torch.zeros(1, 2816)}]]
                 return (empty_cond, f"SKIPPED:{selected_file}", effective_index, len(txt_files))
         
@@ -264,6 +361,10 @@ class BatchPromptReaderWithClip:
                     pooled_negative = pooled_negative.unsqueeze(0)
                 
                 conditioning = [[cond_positive, {"pooled_output": pooled_positive}]]
+            
+            # 优化 6: 记录到外置日志（成功编码后标记为已处理）
+            if enable_logging:
+                _write_log(log_dir, os.path.normpath(target_dir), selected_file, effective_index, len(txt_files))
             
             # 优化 5: 输出元数据
             return (
