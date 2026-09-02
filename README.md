@@ -31,7 +31,7 @@ ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件�
 | 英文参数名 | 中文含义 | 类型 | 默认值 | 使用说明 |
 |-----------|---------|------|--------|----------|
 | `enable_logging` | 启用日志记录 | BOOLEAN | `False` | ✅ 开：记录已处理文件并自动跳过<br>❌ 关：不记录 |
-| `log_folder` | 日志文件夹 | STRING | `user/default/batch_prompt_logs` | 日志存放位置（可填绝对路径） |
+| `log_folder` | 日志文件夹 | STRING | `user/default/batch_prompt_logs` | 日志存放位置（须位于 ComfyUI 目录内） |
 | `clear_log_on_start` | 会话启动时清空日志 | BOOLEAN | `False` | ✅ 开：每次启动 ComfyUI 后第一次运行时清空日志 |
 
 ## 🆕 版本更新 (v2.0)
@@ -55,14 +55,14 @@ ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件�
 | 输入 | 类型 | 说明 |
 |------|------|------|
 | `clip` | CLIP | 来自 CLIP Loader |
-| `folder_path` | STRING | TXT 提示词所在文件夹路径（绝对路径或相对于 ComfyUI 根目录） |
+| `folder_path` | STRING | TXT 提示词所在文件夹路径（须位于 ComfyUI 目录内；支持相对路径，或 ComfyUI 根目录下的绝对路径） |
 | `current_number` | INT | 当前提示词索引（配合"自动更新该值之后"菜单使用） |
 | `recursive` | BOOLEAN | 是否递归扫描子文件夹中的 `.txt` 文件（默认开启） |
 | `reverse_order` | BOOLEAN | 是否倒序排列文件（默认关闭） |
 | `file_pattern` | STRING | 文件名过滤模式，支持通配符（如 `*.txt`, `SFW_*.txt`, `*_v2.txt`，默认 `*.txt`） |
 | `output_folder` | STRING | 输出目录路径（用于跳过检查，默认 `output/`） |
 | `enable_logging` | BOOLEAN | 是否启用外置日志记录，记录已处理文件并自动跳过（默认关闭） |
-| `log_folder` | STRING | 日志文件夹路径（默认 `user/default/batch_prompt_logs`，可填绝对路径） |
+| `log_folder` | STRING | 日志文件夹路径（默认 `user/default/batch_prompt_logs`，须位于 ComfyUI 目录内） |
 | `clear_log_on_start` | BOOLEAN | 会话启动后第一次运行时清空日志（默认关闭） |
 
 ### 可选输入
@@ -87,9 +87,11 @@ cd ComfyUI/custom_nodes
 git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 ```
 
-重启 ComfyUI 后，在画布中右键搜索 `BatchPromptLoader` 或 `批量提示词编码器`。
+重启 ComfyUI 后，在画布中右键搜索 **`Batch Prompt Loader`**。
 
-> 💡 **汉化说明**：节点名称已汉化为"批量提示词加载器"，但参数标签保持英文（行业惯例）。请参考下方的中英对照表快速上手。
+> 💡 **界面语言**：节点名称与参数标签均为英文（ComfyUI 生态的通用做法）。下方提供中英对照表方便快速上手。
+>
+> ⚠️ **路径约束（v2.1.1 起）**：为防范路径遍历，`folder_path`、`log_folder`、`output_folder` 必须位于 **ComfyUI 根目录之内**。指向 ComfyUI 目录之外的绝对路径，或借助 `..` 逃逸的路径，都会被拒绝并给出明确报错。请将提示词文件夹放在如 `ComfyUI/input/batch_prompts` 的位置。
 
 ## 📋 参数中英对照表
 
@@ -126,7 +128,7 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 - **常用开关**：`recursive`（要不要扫子目录）、`reverse_order`（要不要倒着读）
 - **高级功能**：`file_pattern`（筛选特定文件）、`skip_exists`（跳过已生成的）、`enable_logging`（日志记录，自动跳过已处理）
 
-> ℹ️ **为什么参数是英文？** ComfyUI 生态中，自定义节点的参数名通常保持英文，这是行业标准做法，方便全球用户交流和资源共享。节点名称已汉化，一眼就能认出功能。
+> ℹ️ **为什么参数是英文？** ComfyUI 生态中，自定义节点的参数名与显示名通常保持英文，这是行业标准做法，方便全球用户交流和资源共享。
 
 > 💡 **新特性提示**：v2.1 新增外置日志记录，自动跳过已处理文件！v2.0 新增通配符过滤、跳过已存在、元数据输出等功能！
 > 无第三方依赖，仅需 ComfyUI 自带的 PyTorch 环境。
@@ -135,7 +137,7 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 
 ### 基础用法
 
-1. 准备提示词文件夹（如 `C:\prompts\SFW`），每个提示词一个 `.txt` 文件：
+1. 准备提示词文件夹（如 `ComfyUI\input\batch_prompts\SFW`，须位于 ComfyUI 目录内），每个提示词一个 `.txt` 文件：
 
    ```
    positive: 一位成熟的大学教授站在讲台上
