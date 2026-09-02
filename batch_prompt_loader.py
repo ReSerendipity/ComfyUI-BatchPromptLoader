@@ -4,8 +4,15 @@ A custom node for loading and encoding prompts from TXT files with advanced feat
 - Recursive scanning, wildcard filtering, skip exists, metadata output, preview display
 - External log recording: records which prompt files have been processed, and auto-skips them next run
 
-All user-supplied paths (folder_path / log_folder / output_folder) are confined to the
-ComfyUI root directory to prevent path traversal.
+All user-supplied paths are confined to a dedicated base directory to prevent path
+traversal:
+
+    folder_path   -> <ComfyUI root>/input
+    log_folder    -> <ComfyUI root>/user
+    output_folder -> <ComfyUI root>/output
+
+Absolute paths pointing outside the corresponding base and relative paths escaping
+via '..' are rejected.
 """
 import os
 import torch
@@ -21,21 +28,42 @@ _log_cleared_this_session = False
 def _confine_to_base(base_dir, user_path, label):
     """Resolve a user-supplied path and verify it stays inside base_dir.
 
-    Mitigates path traversal: absolute paths pointing outside the ComfyUI root and
-    relative paths escaping via '..' are rejected. Symlinks are resolved via realpath.
+    Mitigates path traversal: absolute paths pointing outside base_dir and relative
+    paths escaping via '..' are rejected. Symlinks are resolved via realpath.
     """
     base_real = os.path.normcase(os.path.realpath(base_dir))
     if os.path.isabs(user_path):
         candidate = user_path
     else:
-        candidate = os.path.join(base_dir, user_path)
+        candidate = os.path.join(base_dir, user_path or "")
     candidate_real = os.path.normcase(os.path.realpath(candidate))
     if candidate_real != base_real and not candidate_real.startswith(base_real + os.sep):
         raise Exception(
-            f"[BatchPromptLoader] '{label}' must resolve to a location inside the ComfyUI directory.\n"
-            f"Resolved path: {candidate_real}\nAllowed base: {base_real}"
+            f"[BatchPromptLoader] '{label}' must resolve to a location inside:\n"
+            f"  {base_real}\n"
+            f"Resolved path: {candidate_real}\n"
+            f"Absolute paths outside that directory and '..' traversal are not allowed."
         )
     return candidate_real
+
+
+def _strip_legacy_prefix(path, prefix):
+    """Compatibility helper for values originally written against the ComfyUI root.
+
+    Now that folder_path is based on '<root>/input' and log_folder on '<root>/user',
+    legacy values such as 'input/batch_prompts' or 'user/default/batch_prompt_logs'
+    keep working by stripping the leading directory name.
+    """
+    if not path or os.path.isabs(path):
+        return path
+    normalized = path.replace('\\', '/').strip()
+    prefix_lower = prefix.strip('/').lower()
+    lowered = normalized.lower()
+    if lowered == prefix_lower:
+        return ''
+    if lowered.startswith(prefix_lower + '/'):
+        return normalized[len(prefix_lower) + 1:]
+    return path
 
 
 def _sanitize_log_name(rel_path):
@@ -92,9 +120,10 @@ class BatchPromptReaderWithClip:
             "required": {
                 "clip": ("CLIP",),
                 "folder_path": ("STRING", {
-                    "default": "input/batch_prompts",
+                    "default": "batch_prompts",
                     "multiline": False,
-                    "label": "Folder Path"
+                    "label": "Folder Path",
+                    "tooltip": "Relative to <ComfyUI>/input. Must stay inside that folder."
                 }),
                 "current_number": ("INT", {
                     "default": 0,
@@ -120,16 +149,18 @@ class BatchPromptReaderWithClip:
                 "output_folder": ("STRING", {
                     "default": "output/",
                     "multiline": False,
-                    "label": "Output Folder (skip check)"
+                    "label": "Output Folder (skip check)",
+                    "tooltip": "Relative to <ComfyUI>/output. Must stay inside that folder."
                 }),
                 "enable_logging": ("BOOLEAN", {
                     "default": False,
                     "label": "Enable Logging (skip processed)"
                 }),
                 "log_folder": ("STRING", {
-                    "default": "user/default/batch_prompt_logs",
+                    "default": "default/batch_prompt_logs",
                     "multiline": False,
-                    "label": "Log Folder (external, clearable)"
+                    "label": "Log Folder (external, clearable)",
+                    "tooltip": "Relative to <ComfyUI>/user. Must stay inside that folder."
                 }),
                 "clear_log_on_start": ("BOOLEAN", {
                     "default": False,
@@ -156,12 +187,20 @@ class BatchPromptReaderWithClip:
 
     def read_and_encode(self, clip, folder_path, current_number, recursive=True, reverse_order=False,
                         file_pattern="*.txt", output_folder="output/", skip_exists=False,
-                        enable_logging=False, log_folder="user/default/batch_prompt_logs", clear_log_on_start=False,
+                        enable_logging=False, log_folder="default/batch_prompt_logs", clear_log_on_start=False,
                         extra_pnginfo=None, unique_id=None):
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        input_base = os.path.join(base_dir, "input")
+        user_base = os.path.join(base_dir, "user")
+        output_base = os.path.join(base_dir, "output")
 
-        # Confine user-supplied paths to the ComfyUI root (path traversal protection)
-        target_dir = _confine_to_base(base_dir, folder_path, "folder_path")
+        # Each user-supplied path is confined to its own base directory:
+        #   folder_path   -> <ComfyUI root>/input
+        #   log_folder    -> <ComfyUI root>/user
+        #   output_folder -> <ComfyUI root>/output
+        target_dir = _confine_to_base(
+            input_base, _strip_legacy_prefix(folder_path, "input"), "folder_path"
+        )
 
         if not os.path.exists(target_dir):
             raise Exception(
@@ -224,7 +263,9 @@ class BatchPromptReaderWithClip:
         # External logging: skip already-processed prompt files
         log_dir = None
         if enable_logging:
-            log_dir = _confine_to_base(base_dir, log_folder, "log_folder")
+            log_dir = _confine_to_base(
+                user_base, _strip_legacy_prefix(log_folder, "user"), "log_folder"
+            )
 
             global _log_cleared_this_session
             if clear_log_on_start and not _log_cleared_this_session:
@@ -319,7 +360,11 @@ class BatchPromptReaderWithClip:
 
         # Skip images that already exist in the output folder
         if skip_exists and output_folder.strip():
-            out_base = _confine_to_base(base_dir, output_folder.rstrip('/').rstrip('\\'), "output_folder")
+            out_base = _confine_to_base(
+                output_base,
+                _strip_legacy_prefix(output_folder.rstrip('/').rstrip('\\'), "output"),
+                "output_folder"
+            )
             base_name = os.path.splitext(os.path.basename(selected_file))[0]
             possible_extensions = ['.png', '.jpg', '.jpeg', '.webp']
             file_exists = False
