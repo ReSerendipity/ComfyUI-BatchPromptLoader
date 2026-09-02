@@ -6,5 +6,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "BatchPromptReaderWithClip": "批量提示词加载器 (Batch Prompt Loader)",
+    "BatchPromptReaderWithClip": "Batch Prompt Loader",
 }
