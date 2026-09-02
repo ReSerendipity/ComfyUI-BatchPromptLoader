@@ -31,7 +31,7 @@ ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件�
 | 英文参数名 | 中文含义 | 类型 | 默认值 | 使用说明 |
 |-----------|---------|------|--------|----------|
 | `enable_logging` | 启用日志记录 | BOOLEAN | `False` | ✅ 开：记录已处理文件并自动跳过<br>❌ 关：不记录 |
-| `log_folder` | 日志文件夹 | STRING | `user/default/batch_prompt_logs` | 日志存放位置（须位于 ComfyUI 目录内） |
+| `log_folder` | 日志文件夹 | STRING | `user/default/batch_prompt_logs` | 日志存放位置（须位于 ComfyUI/user 目录内） |
 | `clear_log_on_start` | 会话启动时清空日志 | BOOLEAN | `False` | ✅ 开：每次启动 ComfyUI 后第一次运行时清空日志 |
 
 ## 🆕 版本更新 (v2.0)
@@ -55,14 +55,14 @@ ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件�
 | 输入 | 类型 | 说明 |
 |------|------|------|
 | `clip` | CLIP | 来自 CLIP Loader |
-| `folder_path` | STRING | TXT 提示词所在文件夹路径（须位于 ComfyUI 目录内；支持相对路径，或 ComfyUI 根目录下的绝对路径） |
+| `folder_path` | STRING | TXT 提示词所在文件夹路径（须位于 ComfyUI/input 目录内；填写相对于 input 的目录名，如 `batch_prompts`） |
 | `current_number` | INT | 当前提示词索引（配合"自动更新该值之后"菜单使用） |
 | `recursive` | BOOLEAN | 是否递归扫描子文件夹中的 `.txt` 文件（默认开启） |
 | `reverse_order` | BOOLEAN | 是否倒序排列文件（默认关闭） |
 | `file_pattern` | STRING | 文件名过滤模式，支持通配符（如 `*.txt`, `SFW_*.txt`, `*_v2.txt`，默认 `*.txt`） |
 | `output_folder` | STRING | 输出目录路径（用于跳过检查，默认 `output/`） |
 | `enable_logging` | BOOLEAN | 是否启用外置日志记录，记录已处理文件并自动跳过（默认关闭） |
-| `log_folder` | STRING | 日志文件夹路径（默认 `user/default/batch_prompt_logs`，须位于 ComfyUI 目录内） |
+| `log_folder` | STRING | 日志文件夹路径（默认 `user/default/batch_prompt_logs`，须位于 ComfyUI/user 目录内） |
 | `clear_log_on_start` | BOOLEAN | 会话启动后第一次运行时清空日志（默认关闭） |
 
 ### 可选输入
@@ -91,7 +91,12 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 
 > 💡 **界面语言**：节点名称与参数标签均为英文（ComfyUI 生态的通用做法）。下方提供中英对照表方便快速上手。
 >
-> ⚠️ **路径约束（v2.1.1 起）**：为防范路径遍历，`folder_path`、`log_folder`、`output_folder` 必须位于 **ComfyUI 根目录之内**。指向 ComfyUI 目录之外的绝对路径，或借助 `..` 逃逸的路径，都会被拒绝并给出明确报错。请将提示词文件夹放在如 `ComfyUI/input/batch_prompts` 的位置。
+> ⚠️ **路径约束（v2.1.1 起，v2.1.2 进一步收窄）**：为防范路径遍历，三个路径各自被限制在专属基准目录内，越界一律拒绝（含指向基准外的绝对路径、或借助 `..` 逃逸的路径）：
+> - `folder_path` → 限制在 **ComfyUI/input** 内（默认 `batch_prompts`，即 `input/batch_prompts`）
+> - `log_folder` → 限制在 **ComfyUI/user** 内（默认 `user/default/batch_prompt_logs`）
+> - `output_folder` → 限制在 **ComfyUI/output** 内（默认 `output/`）
+>
+> 老工作流里以 `input/...`、`user/...`、`output/...` 开头的值仍可正常解析（会自动剥离前缀）。请把提示词文件夹放在如 `ComfyUI/input/batch_prompts` 的位置。
 
 ## 📋 参数中英对照表
 
@@ -100,7 +105,7 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 | 英文参数名 | 中文含义 | 类型 | 默认值 | 使用说明 |
 |-----------|---------|------|--------|----------|
 | `clip` | CLIP 模型 | CLIP | (必填) | 从 CLIP Loader 连接过来 |
-| `folder_path` | 文件夹路径 | STRING | `input/batch_prompts` | TXT 提示词所在的文件夹 |
+| `folder_path` | 文件夹路径 | STRING | `batch_prompts` | TXT 提示词所在的文件夹（相对于 ComfyUI/input，即 `input/batch_prompts`） |
 | `current_number` | 当前编号 | INT | `0` | 从第几个文件开始（配合右键菜单的递增/递减/随机） |
 | `recursive` | 递归扫描子文件夹 | BOOLEAN | `True` | ✅ 开：包含所有子目录<br>❌ 关：只读根目录 |
 | `reverse_order` | 倒序排列文件 | BOOLEAN | `False` | ✅ 开：从后往前读（Z→A）<br>❌ 关：正常顺序（A→Z） |
@@ -137,7 +142,7 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 
 ### 基础用法
 
-1. 准备提示词文件夹（如 `ComfyUI\input\batch_prompts\SFW`，须位于 ComfyUI 目录内），每个提示词一个 `.txt` 文件：
+1. 准备提示词文件夹（如 `ComfyUI\input\batch_prompts\SFW`，须位于 ComfyUI/input 目录内），每个提示词一个 `.txt` 文件：
 
    ```
    positive: 一位成熟的大学教授站在讲台上
@@ -271,6 +276,12 @@ A: 检查 `folder_path` 是否正确，确认文件夹内是否有符合 `file_p
 A: 控制台会输出 `[n/total] filename`，或者将 `total_count` 输出口连接到 Display Int 节点查看。
 
 ## Changelog
+
+### v2.1.2 (2026-09-02)
+
+- 🔒 **路径范围收窄**：`folder_path` 限制于 **ComfyUI/input**、`log_folder` 限制于 **ComfyUI/user**、`output_folder` 限制于 **ComfyUI/output**（此前为整个 ComfyUI 根目录）。越界路径（含基准外绝对路径、`..` 逃逸、跨兄弟目录）一律拒绝。
+- ♻️ 默认值相应调整：`folder_path` 默认 `batch_prompts`（即 `input/batch_prompts`），老值 `input/...`、`user/...`、`output/...` 会自动剥离前缀继续可用。
+- 📝 三个路径控件新增 tooltip 提示其相对基准目录。
 
 ### v2.1 (2026-08-25)
 
