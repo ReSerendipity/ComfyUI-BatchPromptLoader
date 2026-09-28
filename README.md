@@ -243,10 +243,10 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 ### 控制台输出示例
 
 ```
-[BatchPromptLoader] Fixed: 0 (东亚_成熟_单人_大学教授讲堂.txt...)
-[BatchPromptLoader] ✓ [1/50] 东亚_成熟_单人_大学教授讲堂.txt
-[BatchPromptLoader] Increment: 0 → 1 (东亚_成熟_单人_茶馆遛鸟.txt...)
-[BatchPromptLoader] ✓ [2/50] 东亚_成熟_单人_茶馆遛鸟.txt
+[BatchPromptLoader] Fixed: 0 (prompt_001.txt...)
+[BatchPromptLoader] ✓ [1/50] prompt_001.txt
+[BatchPromptLoader] Increment: 0 → 1 (prompt_002.txt...)
+[BatchPromptLoader] ✓ [2/50] prompt_002.txt
 [BatchPromptLoader] ⏭️ 跳过已存在：prompt_001.png
 ```
 
