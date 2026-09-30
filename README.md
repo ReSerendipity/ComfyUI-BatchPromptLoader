@@ -89,6 +89,17 @@ git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
 
 重启 ComfyUI 后，在画布中右键搜索 **`Batch Prompt Loader`**。
 
+## 发布
+
+本仓库通过 GitHub Releases 分发源码，不附加单独构建产物。维护者将版本 tag 推送到 GitHub 后，工作流会验证 `vMAJOR.MINOR.PATCH` 格式并自动生成 Release notes。示例：
+
+```bash
+git tag v2.1.3
+git push origin v2.1.3
+```
+
+请仅在对应版本已准备好发布时创建并推送 tag；工作流不会替你创建 tag。
+
 > 💡 **界面语言**：节点名称与参数标签均为英文（ComfyUI 生态的通用做法）。下方提供中英对照表方便快速上手。
 >
 > ⚠️ **路径约束（v2.1.1 起，v2.1.2 进一步收窄）**：为防范路径遍历，三个路径各自被限制在专属基准目录内，越界一律拒绝（含指向基准外的绝对路径、或借助 `..` 逃逸的路径）：
