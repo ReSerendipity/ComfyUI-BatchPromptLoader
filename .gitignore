@@ -2,5 +2,6 @@
 __pycache__
 *.md
 !README.md
+!docs/release-governance.md
 user/
 *.log
