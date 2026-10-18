@@ -24,8 +24,8 @@
 
 - 目标遵循 **Keep a Changelog**（`Added / Changed / Fixed / Deprecated / Removed / Security`）。
 - 每次合并 `main`/`master` 应在 `[Unreleased]` 追加；type 映射 `feat→Added`、`fix→Fixed`、`refactor→Changed`；发版时 `[Unreleased]` → `[VERSION] - YYYY-MM-DD`。
-- **现状（实测）**：**`CHANGELOG.md` 不存在**（`gh api .../contents/CHANGELOG.md?ref=master` 返 404）。本仓尚无遵循 Keep a Changelog 的独立变更日志；变更记录目前落在 `README.md` 的 `## Changelog` 段（倒序罗列 v2.1.2 / v2.1 / v2.0），格式与 Keep a Changelog **不一致**，属待收敛差异。
-- 收敛方向：新增根 `CHANGELOG.md` 并按 Keep a Changelog 维护；本文不据此文件改动，仅登记现状。
+- **现状（实测）**：**`CHANGELOG.md` 已建立**（根级，Keep a Changelog 结构，随补建 PR 引入）。本仓已有遵循 Keep a Changelog 的独立变更日志；`README.md` 的 `## Changelog` 段仍保留历史版本口径（v2.1.2 / v2.1 / v2.0）。
+- 收敛方向：已完成——根 `CHANGELOG.md` 已按 Keep a Changelog 建立；后续变更随合并追加至 `[Unreleased]`，发版时转入版本段。
 
 ## 3. 发布流程（远端）
 
@@ -68,7 +68,7 @@
 ## 7. 发布前检查清单
 
 - [ ] 版本位全部同步——本仓无版本位（§1），改为确认 `README.md` 的 `## Changelog` 段与待发 tag 版本号一致
-- [ ] `README.md` `## Changelog` 段已补记本版条目与日期（本仓暂无独立 `CHANGELOG.md`，见 §2）
+- [ ] `README.md` `## Changelog` 段已补记本版条目与日期（独立 `CHANGELOG.md` 已建立，见 §2）
 - [ ] `python -m compileall -q` 通过（本仓无测试套件，以此作语法烟测）
 - [ ] lint / format：**不适用**（本仓未配置 lint / formatter 门禁）
 - [ ] 镜像类仓项（Trivy 阻断 / `.trivyignore.yaml` / `provenance: true` + `sbom: true`）：**不适用**（本仓不产容器镜像）
@@ -96,7 +96,7 @@
 
 - 默认分支：**`master`**（非 `main`）。
 - workflows：**仅 `.github/workflows/release.yml`**；无 Trivy、无 `value=latest`、无 `provenance`、无 `sbom`、无 `gpg-signed-release.yml`。
-- `CHANGELOG.md`：**不存在**（404）。
+- `CHANGELOG.md`：**已建立**（根级，Keep a Changelog 结构）。
 - tag / Release：`gh api .../tags` 与 `.../releases` 均返回**空**（尚无已发布版本）。
 - `.gitignore`：以 `*.md` 忽略全部 Markdown，仅 `!README.md` 白名单放行；**本次已补 `!docs/release-governance.md`** 使本文件可入库。
 - 本仓无 `docs/` 目录（本次新建）、无 `CODEOWNERS`、无 `.trivyignore.yaml`。
