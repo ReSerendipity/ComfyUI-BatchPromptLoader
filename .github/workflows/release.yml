@@ -1,5 +1,7 @@
 name: Release
 
+# 治理规范 §10.2 口径（2026-10-18 收敛）：
+#   tag 驱动 → 远端构建源码归档 + SHA256SUMS → 建 **draft** Release 并挂资产 → 人工审核后 published。
 on:
   push:
     tags:
@@ -27,8 +29,25 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Create source release
+      - name: Checkout tagged commit
+        uses: actions/checkout@v4
+
+      - name: Build source archive and SHA256SUMS
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          ARCHIVE="ComfyUI-BatchPromptLoader-${TAG}.tar.gz"
+          git archive --format=tar.gz --prefix="ComfyUI-BatchPromptLoader-${TAG}/" -o "${ARCHIVE}" HEAD
+          sha256sum "${ARCHIVE}" > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create draft release with assets
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" --verify-tag --generate-notes --title "$TAG"
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" --verify-tag --generate-notes --draft --title "$TAG"
+          gh release upload "$TAG" "ComfyUI-BatchPromptLoader-${TAG}.tar.gz" SHA256SUMS.txt
+          echo "::notice::draft release $TAG created with assets — publish it after manual review."
