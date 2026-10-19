@@ -2,7 +2,7 @@
 
 > **来源与权威**：公共条款见 `ReSerendipity/.github` 的 `REPOSITORY_GUIDELINES.md` §10（发布 / 分发统一规范）。
 > 本文件按 `RELEASE_GOVERNANCE_TEMPLATE.md` 结构编写，只填**本仓特有**内容，**不重写或抵触 §10 的公共条款**。
-> 本文所有事实均以 **2026-10-18 对 `ReSerendipity/ComfyUI-BatchPromptLoader`（默认分支 `master`）的 `gh api` 实测**为依据。
+> 本文所有事实均以 **2026-10-18 对 `ReSerendipity/ComfyUI-BatchPromptLoader`（默认分支 `main`，2026-10-19 由 `master` 迁移）的 `gh api` 实测**为依据。
 
 ---
 
@@ -23,13 +23,13 @@
 ## 2. CHANGELOG 管理
 
 - 目标遵循 **Keep a Changelog**（`Added / Changed / Fixed / Deprecated / Removed / Security`）。
-- 每次合并 `main`/`master` 应在 `[Unreleased]` 追加；type 映射 `feat→Added`、`fix→Fixed`、`refactor→Changed`；发版时 `[Unreleased]` → `[VERSION] - YYYY-MM-DD`。
+- 每次合并 `main` 应在 `[Unreleased]` 追加；type 映射 `feat→Added`、`fix→Fixed`、`refactor→Changed`；发版时 `[Unreleased]` → `[VERSION] - YYYY-MM-DD`。
 - **现状（实测）**：**`CHANGELOG.md` 已建立**（根级，Keep a Changelog 结构，随补建 PR 引入）。本仓已有遵循 Keep a Changelog 的独立变更日志；`README.md` 的 `## Changelog` 段仍保留历史版本口径（v2.1.2 / v2.1 / v2.0）。
 - 收敛方向：已完成——根 `CHANGELOG.md` 已按 Keep a Changelog 建立；后续变更随合并追加至 `[Unreleased]`，发版时转入版本段。
 
 ## 3. 发布流程（远端）
 
-本仓实测发布链：**`.github/workflows/release.yml`（文件名实测确认）**，由 PR #1「ci: add source release workflow」于 2026-09-30 合入 `master`（merge commit `cf1a994`）。
+本仓实测发布链：**`.github/workflows/release.yml`（文件名实测确认）**，由 PR #1「ci: add source release workflow」于 2026-09-30 合入 `main`（当时为 `master`）（merge commit `cf1a994`）。
 
 1. 确认版本相关文档（`README.md` 的 `## Changelog` 段）已更新到待发版本。
 2. 同步版本位——本仓无版本位（见 §1），仅需文档口径一致。
@@ -94,7 +94,7 @@
 
 ## 现状事实速记（2026-10-18 实测）
 
-- 默认分支：**`master`**（非 `main`）。
+- 默认分支：**`main`**（2026-10-19 由 `master` 迁移，`gh api` PATCH default_branch 实测回读确认）。
 - workflows：**仅 `.github/workflows/release.yml`**；无 Trivy、无 `value=latest`、无 `provenance`、无 `sbom`、无 `gpg-signed-release.yml`。
 - `CHANGELOG.md`：**已建立**（根级，Keep a Changelog 结构）。
 - tag / Release：`gh api .../tags` 与 `.../releases` 均返回**空**（尚无已发布版本）。
