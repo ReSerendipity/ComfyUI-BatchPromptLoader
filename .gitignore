@@ -5,3 +5,7 @@ __pycache__
 !docs/release-governance.md
 user/
 *.log
+AGENTS.md
+!/AGENTS.md
+/local/
+!docs/agent-contract.md
