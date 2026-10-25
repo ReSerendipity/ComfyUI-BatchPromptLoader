@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1f2a"/>
+      <stop offset="1" stop-color="#11141b"/>
+    </linearGradient>
+    <linearGradient id="nodeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a3040"/>
+      <stop offset="1" stop-color="#1f2431"/>
+    </linearGradient>
+    <linearGradient id="highlight" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#60a5fa"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="720" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="600" y="44" text-anchor="middle" fill="#f1f5f9" font-size="22" font-weight="700">Batch Prompt Loader — Data Flow</text>
+  <text x="600" y="68" text-anchor="middle" fill="#94a3b8" font-size="13">TXT prompt folder → node reads &amp; encodes → downstream ComfyUI nodes</text>
+
+  <!-- Left: prompt folder -->
+  <g transform="translate(60,140)">
+    <rect width="240" height="380" rx="10" fill="#1f2431" stroke="#334155" stroke-width="1.5"/>
+    <text x="120" y="30" text-anchor="middle" fill="#e2e8f0" font-size="15" font-weight="600">input/batch_prompts/</text>
+    <text x="120" y="50" text-anchor="middle" fill="#64748b" font-size="11">(relative to ComfyUI/input)</text>
+
+    <!-- folder icon -->
+    <g transform="translate(20,70)">
+      <path d="M0,8 L0,60 L180,60 L180,14 L130,14 L118,4 L10,4 z" fill="#334155" stroke="#475569"/>
+      <text x="90" y="38" text-anchor="middle" fill="#cbd5e1" font-size="12" font-weight="600">batch_prompts/</text>
+    </g>
+
+    <!-- txt files -->
+    <g font-size="12" fill="#e2e8f0">
+      <rect x="30" y="150" width="180" height="34" rx="4" fill="#0f172a" stroke="#334155"/>
+      <text x="42" y="171">SFW/prompt_001.txt</text>
+      <rect x="30" y="192" width="180" height="34" rx="4" fill="#0f172a" stroke="#334155"/>
+      <text x="42" y="213">SFW/prompt_002.txt</text>
+      <rect x="30" y="234" width="180" height="34" rx="4" fill="#0f172a" stroke="#334155"/>
+      <text x="42" y="255">NSFW/dark_aesthetic.txt</text>
+    </g>
+
+    <g transform="translate(20,290)">
+      <text x="0" y="0" fill="#94a3b8" font-size="11">• recursive subfolders</text>
+      <text x="0" y="20" fill="#94a3b8" font-size="11">• wildcard filter (*.txt)</text>
+      <text x="0" y="40" fill="#94a3b8" font-size="11">• positive: / negative: split</text>
+      <text x="0" y="60" fill="#94a3b8" font-size="11">• fixed / increment / decrement / random</text>
+    </g>
+  </g>
+
+  <!-- Center: Batch Prompt Loader node -->
+  <g transform="translate(420,180)">
+    <rect width="360" height="340" rx="12" fill="url(#nodeGrad)" stroke="url(#highlight)" stroke-width="2"/>
+    <rect width="360" height="36" rx="12" fill="url(#highlight)"/>
+    <rect y="24" width="360" height="12" fill="url(#highlight)"/>
+    <text x="180" y="24" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">Batch Prompt Loader</text>
+    <text x="180" y="52" text-anchor="middle" fill="#94a3b8" font-size="11">BatchPromptReaderWithClip · category: batch_tools</text>
+
+    <!-- input ports -->
+    <g font-size="12" fill="#e2e8f0">
+      <circle cx="14" cy="90" r="5" fill="#22d3ee"/>
+      <text x="26" y="94">clip (CLIP)</text>
+      <circle cx="14" cy="120" r="5" fill="#64748b"/>
+      <text x="26" y="124">folder_path = "batch_prompts"</text>
+      <circle cx="14" cy="150" r="5" fill="#64748b"/>
+      <text x="26" y="154">current_index = 0</text>
+      <circle cx="14" cy="180" r="5" fill="#64748b"/>
+      <text x="26" y="184">recursive / reverse_order</text>
+      <circle cx="14" cy="210" r="5" fill="#64748b"/>
+      <text x="26" y="214">file_pattern = "*.txt"</text>
+      <circle cx="14" cy="240" r="5" fill="#64748b"/>
+      <text x="26" y="244">enable_logging / log_folder</text>
+    </g>
+
+    <!-- divider -->
+    <line x1="20" y1="266" x2="340" y2="266" stroke="#334155"/>
+    <text x="180" y="282" text-anchor="middle" fill="#64748b" font-size="10">outputs</text>
+
+    <!-- output ports -->
+    <g font-size="12" fill="#e2e8f0">
+      <circle cx="346" cy="304" r="5" fill="#34d399"/>
+      <text x="334" y="308" text-anchor="end">conditioning</text>
+      <circle cx="346" cy="324" r="5" fill="#fbbf24"/>
+      <text x="334" y="328" text-anchor="end">filename</text>
+      <circle cx="180" cy="324" r="5" fill="#fbbf24"/>
+      <text x="192" y="328">index · total_count</text>
+    </g>
+  </g>
+
+  <!-- Right: downstream nodes -->
+  <g transform="translate(880,140)">
+    <!-- CLIP Loader -->
+    <g>
+      <rect width="260" height="80" rx="10" fill="url(#nodeGrad)" stroke="#334155"/>
+      <text x="130" y="28" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">CLIP Loader</text>
+      <text x="130" y="50" text-anchor="middle" fill="#94a3b8" font-size="11">(loads CLIP model)</text>
+      <circle cx="246" cy="68" r="5" fill="#22d3ee"/>
+    </g>
+
+    <!-- KSampler -->
+    <g transform="translate(0,130)">
+      <rect width="260" height="90" rx="10" fill="url(#nodeGrad)" stroke="#334155"/>
+      <text x="130" y="28" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">KSampler</text>
+      <text x="130" y="50" text-anchor="middle" fill="#94a3b8" font-size="11">latent → pixels</text>
+      <circle cx="14" cy="30" r="5" fill="#34d399"/>
+      <text x="26" y="34" fill="#cbd5e1" font-size="11">positive (conditioning)</text>
+    </g>
+
+    <!-- Save Image -->
+    <g transform="translate(0,260)">
+      <rect width="260" height="90" rx="10" fill="url(#nodeGrad)" stroke="#334155"/>
+      <text x="130" y="28" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">Save Image</text>
+      <text x="130" y="50" text-anchor="middle" fill="#94a3b8" font-size="11">filename_prefix ← filename</text>
+      <circle cx="14" cy="68" r="5" fill="#fbbf24"/>
+      <text x="26" y="72" fill="#cbd5e1" font-size="11">filename (metadata)</text>
+    </g>
+  </g>
+
+  <!-- Arrows -->
+  <!-- folder -> node -->
+  <path d="M300,300 L420,300" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="360" y="290" text-anchor="middle" fill="#94a3b8" font-size="10">scan .txt</text>
+
+  <!-- CLIP Loader -> node clip input -->
+  <path d="M880,180 L780,270" stroke="#22d3ee" stroke-width="2" fill="none" marker-end="url(#arrowBlue)"/>
+  <text x="830" y="215" text-anchor="middle" fill="#67e8f9" font-size="10">clip</text>
+
+  <!-- node conditioning -> KSampler -->
+  <path d="M780,480 L880,300" stroke="#34d399" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="835" y="395" text-anchor="middle" fill="#6ee7b7" font-size="10">conditioning</text>
+
+  <!-- node filename -> Save Image -->
+  <path d="M780,504 L880,488" stroke="#fbbf24" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="830" y="490" text-anchor="middle" fill="#fcd34d" font-size="10">filename</text>
+
+  <!-- Bottom legend -->
+  <g transform="translate(60,580)" font-size="12" fill="#cbd5e1">
+    <rect width="1080" height="110" rx="10" fill="#1f2431" stroke="#334155"/>
+    <text x="20" y="28" fill="#e2e8f0" font-weight="700" font-size="13">Key ideas</text>
+    <text x="20" y="52" fill="#94a3b8">• Each Queue run reads one TXT file (by index), encodes it with the connected CLIP, and returns CONDITIONING.</text>
+    <text x="20" y="72" fill="#94a3b8">• Set "control_after_generate" = increment on Current Index to auto-advance per Queue — no extra seed node needed.</text>
+    <text x="20" y="92" fill="#94a3b8">• Paths are confined to ComfyUI/input (folder), ComfyUI/user (logs), ComfyUI/output (skip-exists check).</text>
+  </g>
+</svg>
