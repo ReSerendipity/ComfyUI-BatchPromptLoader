@@ -1,323 +1,324 @@
-> **状态：暂时归档（Temporary Archive）｜2026-10-23**
->
-> 本仓库处于 GitHub 只读归档状态。这是**暂时归档**，不是永久归档，也不代表项目终止。
-> 归档期间，代码、提交历史以及已有的 Release / Pages 保持可访问；公开仓可克隆、Star、Fork，私有仓仅限现有协作者。不能提交代码、发起 Issue / PR、评论或发布新版本。
-> 恢复开发时，由仓库所有者解除归档（unarchive），更新本声明，并同步修改治理台账中的 `lifecycle`。
-> 治理口径见 [ReSerendipity/.github 治理规范 §15.7](https://github.com/ReSerendipity/.github/blob/main/governance/REPOSITORY_GUIDELINES.md)。
+# ComfyUI-BatchPromptLoader
+
+A ComfyUI custom node that batch-loads and encodes TXT prompt files from a folder — with fixed / increment / decrement / random indexing, recursive scan, wildcard filter, skip-already-done, and external progress logs.
+
+> 从文件夹批量加载并编码 TXT 提示词的 ComfyUI 自定义节点，支持固定/递增/递减/随机四种索引、递归扫描、通配符过滤、跳过已处理与外置日志。
+
+[![Release workflow](https://img.shields.io/github/actions/workflow/status/ReSerendipity/ComfyUI-BatchPromptLoader/release.yml?branch=main&label=release&logo=github)](https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader/actions/workflows/release.yml)
+[![Latest Release](https://img.shields.io/github/v/release/ReSerendipity/ComfyUI-BatchPromptLoader?display_name=tag&sort=semver)](https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader/releases)
+[![Language: Python](https://img.shields.io/badge/language-Python-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Last commit](https://img.shields.io/github/last-commit/ReSerendipity/ComfyUI-BatchPromptLoader)](https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader/commits/main)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**[中文](#中文) · [English](#english)**
 
 ---
 
-# ComfyUI-BatchPromptLoader
+## 中文
 
-ComfyUI 自定义节点：从文件夹批量加载并编码 TXT 提示词文件，支持**固定/递增/递减/随机**四种模式，以及递归扫描、通配符过滤、跳过已存在等高级功能。
+### 项目简介
 
-用于"多提示词 + 多张图"的批量生成场景：把提示词拆成多个 TXT 文件放进一个文件夹，节点按索引逐个读取，并通过内置的自动递增功能，每次点 Queue 自动切换下一个提示词。
+ComfyUI-BatchPromptLoader 是一个面向"多提示词 × 多张图"批量生成场景的 ComfyUI 自定义节点（real custom node，含 `__init__.py` 与 `requirements.txt`）。它把一个文件夹下的多个 `.txt` 提示词文件按索引逐个读出、用已连接的 CLIP 编码为 `CONDITIONING`，再接到下游 KSampler。配合节点 `Current Index` 的 `control_after_generate = increment`，每点一次 Queue 就自动切到下一个提示词，无需额外的种子/计数器节点。
 
-## 功能特性
+### 核心特性
 
-- 📁 **递归扫描**：自动扫描文件夹及所有子文件夹中的提示词文件
-- 🔍 **通配符过滤**：支持 `*.txt`, `SFW_*.txt` 等文件名模式匹配
-- ⏭️ **跳过已存在**：可选跳过已生成的图片，避免重复渲染
-- 📋 **外置日志记录**：自动记录已处理的提示词文件，下次运行自动跳过（可外置清除/选择性删除日志）
-- 💬 **实时预览**：控制台显示当前文件和总数 `[n/total] filename`
-- 🎯 **元数据输出**：输出文件名、索引、总数供后续节点使用
-- 🎲 四种索引模式：`fixed`（固定）/ `increment`（递增）/ `decrement`（递减）/ `random`（随机）
-- 🔁 内置自动递增：每次 Queue 后自动切换下一个提示词，无需额外种子节点
-- 🔃 支持**倒序**排列文件
-- 🧠 智能记忆：记录上次读取位置，重启 ComfyUI 后从上次位置继续
-- ✂️ 自动拆分正负提示词：支持 `positive:` / `negative:` 段
+- 📁 **递归扫描**：自动扫描文件夹及所有子目录中的 `.txt` 文件。
+- 🔍 **通配符过滤**：`file_pattern` 支持 `*.txt`、`SFW_*.txt`、`*_v2.txt` 等文件名模式。
+- 🎲 **四种索引模式**：`fixed` / `increment` / `decrement` / `random`，由 `Current Index` 控件的"生成后控制"菜单直接切换。
+- ♻️ **内置自动递增**：每次 Queue 后自动推进索引，并在重启 ComfyUI 后从上次位置继续。
+- ⏭️ **跳过已存在**：`skip_exists` + `output_folder` 可按输出目录同名图片跳过，避免重复渲染。
+- 📋 **外置日志记录**：`enable_logging` 把已处理文件写到 `user/default/batch_prompt_logs/` 下的 JSON，中断后重跑自动跳过；可整目录清空或按单文件删除。
+- ✂️ **正负提示词自动分段**：TXT 内可用 `positive:` / `negative:` 段；无段头时整段作为正向提示词。
+- 🛡️ **路径收窄**：`folder_path` 限定在 `ComfyUI/input/`、`log_folder` 在 `ComfyUI/user/`、`output_folder` 在 `ComfyUI/output/`，拒绝越界与 `..` 逃逸。
+- 📤 **元数据输出**：额外吐出 `filename` / `index` / `total_count`，可连到 Save Image 的 `filename_prefix` 或 Display Int。
 
-## 🆕 版本更新 (v2.1)
+### 展示
 
-### 新增功能
+**1. 节点菜单（右键画布 → 添加节点 → batch_tools → Batch Prompt Loader）**
 
-- ✅ 外置日志记录（`enable_logging` + `log_folder` + `clear_log_on_start`）
-- ✅ 自动跳过已处理过的提示词文件（中断后重跑不重复生成）
-- ✅ 日志文件夹可外置清除或选择性删除（每个文件一个 JSON）
+![Node menu](docs/assets/readme-comfyui-batchpromptloader-1.png)
 
-### 输入参数
+在 ComfyUI 画布空白处右键，依次进入 `添加节点 → batch_tools → Batch Prompt Loader` 即可添加本节点。
 
-| 英文参数名 | 中文含义 | 类型 | 默认值 | 使用说明 |
-|-----------|---------|------|--------|----------|
-| `enable_logging` | 启用日志记录 | BOOLEAN | `False` | ✅ 开：记录已处理文件并自动跳过<br>❌ 关：不记录 |
-| `log_folder` | 日志文件夹 | STRING | `user/default/batch_prompt_logs` | 日志存放位置（须位于 ComfyUI/user 目录内） |
-| `clear_log_on_start` | 会话启动时清空日志 | BOOLEAN | `False` | ✅ 开：每次启动 ComfyUI 后第一次运行时清空日志 |
+**2. 节点属性（所有输入与输出端口）**
 
-## 🆕 版本更新 (v2.0)
+![Node properties](docs/assets/readme-comfyui-batchpromptloader-2.png)
 
-### 新增功能
+节点输入：`clip`、`folder_path`、`current_number`、`recursive`、`reverse_order`、`file_pattern`、`output_folder`、`enable_logging`、`log_folder`、`clear_log_on_start`，以及可选输入 `skip_exists`；输出：`conditioning`、`filename`、`index`、`total_count`。
 
-- ✅ 通配符文件名过滤 (`file_pattern`)
-- ✅ 跳过已存在的图片 (`skip_exists` + `output_folder`)
-- ✅ 元数据输出口 (`filename`, `index`, `total_count`)
-- ✅ 增强错误提示（区分路径不存在/文件夹为空/无匹配文件）
-- ✅ 控制台实时显示进度 `[n/total] filename`
+**3. 空工作流（ComfyUI 启动后默认画布）**
 
-## 节点
+![Empty workflow](docs/assets/readme-comfyui-batchpromptloader-3.png)
 
-| 节点名 | 显示名 | 说明 |
-|--------|--------|------|
-| `BatchPromptReaderWithClip` | BatchPromptLoader | 加载 TXT 提示词并编码为 conditioning |
+节点以纯 custom node 形式加载，不自带工作流模板；从空画布右键添加即可。
 
-### 输入
+**4. 提示词文件夹布局（放在 `ComfyUI/input/` 下）**
 
-| 输入 | 类型 | 说明 |
-|------|------|------|
-| `clip` | CLIP | 来自 CLIP Loader |
-| `folder_path` | STRING | TXT 提示词所在文件夹路径（须位于 ComfyUI/input 目录内；填写相对于 input 的目录名，如 `batch_prompts`） |
-| `current_number` | INT | 当前提示词索引（配合"自动更新该值之后"菜单使用） |
-| `recursive` | BOOLEAN | 是否递归扫描子文件夹中的 `.txt` 文件（默认开启） |
-| `reverse_order` | BOOLEAN | 是否倒序排列文件（默认关闭） |
-| `file_pattern` | STRING | 文件名过滤模式，支持通配符（如 `*.txt`, `SFW_*.txt`, `*_v2.txt`，默认 `*.txt`） |
-| `output_folder` | STRING | 输出目录路径（用于跳过检查，默认 `output/`） |
-| `enable_logging` | BOOLEAN | 是否启用外置日志记录，记录已处理文件并自动跳过（默认关闭） |
-| `log_folder` | STRING | 日志文件夹路径（默认 `user/default/batch_prompt_logs`，须位于 ComfyUI/user 目录内） |
-| `clear_log_on_start` | BOOLEAN | 会话启动后第一次运行时清空日志（默认关闭） |
+![Prompt folder layout](docs/assets/readme-comfyui-batchpromptloader-4.png)
 
-### 可选输入
+每个 `.txt` 一个提示词；用 `positive:` / `negative:` 段拆分正负向。`folder_path` 填相对于 `input/` 的目录名，如 `batch_prompts`。
 
-| 输入 | 类型 | 说明 |
-|------|------|------|
-| `skip_exists` | BOOLEAN | 开启后，若输出目录已存在同名图片则跳过该文件（默认关闭） |
+**5. 数据流架构**
 
-### 输出
+![Architecture](docs/assets/readme-comfyui-batchpromptloader-5.svg)
 
-| 输出 | 类型 | 说明 |
-|------|------|------|
-| `conditioning` | CONDITIONING | 编码后的正向提示词条件 |
-| `filename` | STRING | 当前读取的文件名（相对路径） |
-| `index` | INT | 当前文件的索引（从 0 开始） |
-| `total_count` | INT | 总文件数 |
+提示词文件夹 → 本节点（读 TXT + CLIP 编码）→ `conditioning` 接 KSampler；`filename` 元数据可接 Save Image 的 `filename_prefix`。
 
-## 安装
+### 快速开始
+
+> 前置：已安装并能正常启动 ComfyUI（任意分发，包括便携包 / 源码安装）。本节点**不是 pip 包**，必须以 ComfyUI custom node 形式安装。
 
 ```bash
+# 1. 进入 ComfyUI 的 custom_nodes 目录
 cd ComfyUI/custom_nodes
+
+# 2. 克隆本仓
 git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
+
+# 3. 安装依赖（本节点无第三方依赖，仅使用 ComfyUI 自带的 PyTorch 环境；
+#    该命令兼容未来可能新增的依赖）
+pip install -r ComfyUI-BatchPromptLoader/requirements.txt
+
+# 4. 重启 ComfyUI
 ```
 
-重启 ComfyUI 后，在画布中右键搜索 **`Batch Prompt Loader`**。
+重启后在画布空白处右键 → `添加节点 → batch_tools → Batch Prompt Loader`。
 
-## 发布
+**最小验证：**
 
-本仓库通过 GitHub Releases 分发源码，不附加单独构建产物。维护者将版本 tag 推送到 GitHub 后，工作流会验证 `vMAJOR.MINOR.PATCH` 格式并自动生成 Release notes。示例：
+1. 在 `ComfyUI/input/` 下建一个 `batch_prompts/` 目录，丢几个 `.txt` 文件进去。
+2. 拖入一个标准 `Load CLIP` 节点与本节点，把 `Load CLIP` 的 `CLIP` 输出连到本节点的 `clip` 输入。
+3. 把本节点的 `conditioning` 输出连到 `CLIP Text Encode (Positive)` 或 KSampler 的 `positive` 输入。
+4. 把 `Current Index` 的"生成后控制"切到 `increment`，点 Queue 观察控制台输出 `[n/total] filename`。
+
+> 本节点不下载模型、不触发推理；只在 Queue 被点击时读取并编码当前 TXT。
+
+### 系统要求与兼容性
+
+- ComfyUI 任意近期版本（custom node API 稳定）。
+- Python ≥ 3.10（跟随 ComfyUI 主线）。
+- 无第三方运行时依赖（`requirements.txt` 为空注释文件）；只使用 ComfyUI 自带的 `torch`。
+- 路径约束自 v2.1.1 起收窄：`folder_path` 相对 `ComfyUI/input/`、`log_folder` 相对 `ComfyUI/user/`、`output_folder` 相对 `ComfyUI/output/`；旧工作流中以 `input/...`、`user/...`、`output/...` 开头的值会自动剥离前缀继续可用。
+- 仅在 CPU / CUDA / MPS 任意 ComfyUI 支持的设备上运行，节点本身不区分设备。
+
+### 使用示例
+
+**基础连线：**
+
+```
+[Load CLIP] ──CLIP──▶ [Batch Prompt Loader] ──conditioning──▶ [KSampler positive]
+                                                  └─filename──▶ [Save Image.filename_prefix]
+```
+
+**TXT 文件格式：**
+
+```text
+positive: a wise professor standing on a lecture podium, soft daylight
+negative: blurry, low quality, deformed
+```
+
+无 `positive:` 段头时，整份文件内容作为正向提示词。
+
+**文件排序：**
+
+- 文件按路径字典序（不区分大小写）排列；子目录中的文件排在其父目录文件之后。
+- `reverse_order = true` 对整个列表倒序。
+- `file_pattern = "SFW_*.txt"` 可只挑出特定前缀的文件。
+
+**中断续跑（外置日志）：**
+
+1. 打开 `enable_logging`。
+2. 正常 Queue；每成功编码一个文件，就在 `log_folder` 写一个 JSON。
+3. 中断后重跑，节点自动跳过已处理文件，全部完成时 `filename` 输出 `ALL_DONE`。
+4. 想重跑某个文件，删掉对应的那个 JSON 即可；想整体重来，清空 `log_folder` 或打开 `clear_log_on_start`。
+
+### 常见问题（FAQ）
+
+**Q1：为什么节点列表里找不到？**
+A：确认仓库已放到 `ComfyUI/custom_nodes/ComfyUI-BatchPromptLoader/` 且 `__init__.py` 位于该目录下；重启 ComfyUI 后看启动日志里 `Import times for custom nodes` 是否列出本目录。仍找不到时检查 ComfyUI 控制台是否有 Python 导入错误。
+
+**Q2：`filename` / `index` / `total_count` 怎么用？**
+A：`filename` 可连到 Save Image 的 `filename_prefix`，实现按提示词文件名落盘；`index` 与 `total_count` 可连 Display Int 做进度显示，或用在 Switch / 条件分支里。
+
+**Q3：开启 `skip_exists` 跳过后图片会黑吗？**
+A：跳过时节点返回空 `CONDITIONING`，下游 KSampler 可能出黑图或随机噪声。建议配合 Switch 节点只在需要生成时走采样分支，或依赖后续 `Save Image` 不被触发。
+
+**Q4：日志目录里的 JSON 能直接删吗？**
+A：可以。每个已处理文件对应一个 JSON（文件名由提示词相对路径转义而来）；删单个 JSON 即重跑该提示词，清空整个 `log_folder` 即从头开始。
+
+**Q5：路径填了绝对路径为什么报错？**
+A：出于路径遍历防护，`folder_path` / `log_folder` / `output_folder` 分别被限制在 `ComfyUI/input` / `ComfyUI/user` / `ComfyUI/output` 内；请填相对于对应基准目录的路径，如 `batch_prompts`。
+
+### 文档与治理
+
+- [CHANGELOG.md](CHANGELOG.md) — 版本变更记录。
+- [docs/agent-contract.md](docs/agent-contract.md) — 自动化 agent 接入契约。
+- [docs/release-governance.md](docs/release-governance.md) — 发布与回滚规范（tag 格式、draft release、SHA256SUMS 等）。
+- [AGENTS.md](AGENTS.md) — 公开精简版 agent 契约。
+
+### 贡献、安全与支持
+
+- Issue / PR 欢迎：请先阅读 `docs/release-governance.md` 了解发布口径。
+- 安全问题请通过 Issue 或仓库所有者披露，不要在公开 Issue 中泄露可利用细节。
+- 支持渠道：GitHub Issues；不提供商业支持 SLA。
+- 发布由维护者推送 `vMAJOR.MINOR.PATCH` tag 触发 [release.yml](.github/workflows/release.yml)，自动生成 draft release 与源码归档，人工审核后发布。
+
+### 许可证
+
+[MIT](LICENSE)
+
+---
+
+## English
+
+### Introduction
+
+ComfyUI-BatchPromptLoader is a real ComfyUI custom node (with `__init__.py` and `requirements.txt`) built for the "many prompts × many images" batch-generation workflow. It reads one `.txt` prompt file per Queue run from a folder, encodes it with the connected CLIP into `CONDITIONING`, and feeds it downstream to KSampler. Set `Current Index` `control_after_generate = increment` and each Queue automatically advances to the next prompt — no extra seed/counter node required.
+
+### Features
+
+- 📁 **Recursive scan**: walks the folder and every subdirectory for `.txt` files.
+- 🔍 **Wildcard filter**: `file_pattern` supports `*.txt`, `SFW_*.txt`, `*_v2.txt`, etc.
+- 🎲 **Four index modes**: `fixed` / `increment` / `decrement` / `random`, switched directly from the `Current Index` control's "control after generate" menu.
+- ♻️ **Built-in auto-advance**: the index advances per Queue and resumes where it left off after a ComfyUI restart.
+- ⏭️ **Skip existing**: `skip_exists` + `output_folder` skips files whose output image already exists.
+- 📋 **External progress log**: `enable_logging` writes one JSON per processed file under `user/default/batch_prompt_logs/`; re-runs after an interruption auto-skip completed files.
+- ✂️ **Positive/negative split**: TXT files may use `positive:` / `negative:` sections; without a header the whole body is treated as positive.
+- 🛡️ **Path confinement**: `folder_path` is confined to `ComfyUI/input/`, `log_folder` to `ComfyUI/user/`, `output_folder` to `ComfyUI/output/`; escapes via `..` or absolute paths outside the base are rejected.
+- 📤 **Metadata outputs**: `filename` / `index` / `total_count` can be wired to Save Image `filename_prefix` or Display Int.
+
+### Screenshots
+
+**1. Node menu (right-click canvas → Add Node → batch_tools → Batch Prompt Loader)**
+
+![Node menu](docs/assets/readme-comfyui-batchpromptloader-1.png)
+
+Right-click an empty canvas area and choose `Add Node → batch_tools → Batch Prompt Loader`.
+
+**2. Node properties (all inputs and outputs)**
+
+![Node properties](docs/assets/readme-comfyui-batchpromptloader-2.png)
+
+Inputs: `clip`, `folder_path`, `current_number`, `recursive`, `reverse_order`, `file_pattern`, `output_folder`, `enable_logging`, `log_folder`, `clear_log_on_start`, plus optional `skip_exists`. Outputs: `conditioning`, `filename`, `index`, `total_count`.
+
+**3. Empty workflow (default canvas after ComfyUI starts)**
+
+![Empty workflow](docs/assets/readme-comfyui-batchpromptloader-3.png)
+
+The node loads as a plain custom node and ships no workflow template — add it from an empty canvas.
+
+**4. Prompt folder layout (place under `ComfyUI/input/`)**
+
+![Prompt folder layout](docs/assets/readme-comfyui-batchpromptloader-4.png)
+
+One `.txt` per prompt; split positive/negative with `positive:` / `negative:` sections. `folder_path` is a directory name relative to `input/`, e.g. `batch_prompts`.
+
+**5. Data-flow architecture**
+
+![Architecture](docs/assets/readme-comfyui-batchpromptloader-5.svg)
+
+Prompt folder → this node (read TXT + CLIP encode) → `conditioning` to KSampler; `filename` metadata can feed Save Image `filename_prefix`.
+
+### Quick start
+
+> Prerequisite: a working ComfyUI installation (portable package or from source). This node is **not a pip package** — it must be installed as a ComfyUI custom node.
 
 ```bash
-git tag v2.1.3
-git push origin v2.1.3
+# 1. Enter ComfyUI's custom_nodes directory
+cd ComfyUI/custom_nodes
+
+# 2. Clone this repository
+git clone https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader.git
+
+# 3. Install dependencies (the node has no third-party deps and only uses
+#    ComfyUI's bundled PyTorch; this line stays valid if deps are added later)
+pip install -r ComfyUI-BatchPromptLoader/requirements.txt
+
+# 4. Restart ComfyUI
 ```
 
-请仅在对应版本已准备好发布时创建并推送 tag；工作流不会替你创建 tag。
+After restart, right-click the canvas → `Add Node → batch_tools → Batch Prompt Loader`.
 
-> 💡 **界面语言**：节点名称与参数标签均为英文（ComfyUI 生态的通用做法）。下方提供中英对照表方便快速上手。
->
-> ⚠️ **路径约束（v2.1.1 起，v2.1.2 进一步收窄）**：为防范路径遍历，三个路径各自被限制在专属基准目录内，越界一律拒绝（含指向基准外的绝对路径、或借助 `..` 逃逸的路径）：
-> - `folder_path` → 限制在 **ComfyUI/input** 内（默认 `batch_prompts`，即 `input/batch_prompts`）
-> - `log_folder` → 限制在 **ComfyUI/user** 内（默认 `user/default/batch_prompt_logs`）
-> - `output_folder` → 限制在 **ComfyUI/output** 内（默认 `output/`）
->
-> 老工作流里以 `input/...`、`user/...`、`output/...` 开头的值仍可正常解析（会自动剥离前缀）。请把提示词文件夹放在如 `ComfyUI/input/batch_prompts` 的位置。
+**Minimal verification:**
 
-## 📋 参数中英对照表
+1. Create `ComfyUI/input/batch_prompts/` and drop a few `.txt` files into it.
+2. Add a stock `Load CLIP` node and this node; wire `Load CLIP.CLIP` → `Batch Prompt Loader.clip`.
+3. Wire `Batch Prompt Loader.conditioning` → KSampler `positive`.
+4. Set `Current Index` "control after generate" to `increment`, click Queue, and watch the console print `[n/total] filename`.
 
-### 输入参数
+> The node does not download models and does not trigger inference; it only reads and encodes the current TXT when Queue is clicked.
 
-| 英文参数名 | 中文含义 | 类型 | 默认值 | 使用说明 |
-|-----------|---------|------|--------|----------|
-| `clip` | CLIP 模型 | CLIP | (必填) | 从 CLIP Loader 连接过来 |
-| `folder_path` | 文件夹路径 | STRING | `batch_prompts` | TXT 提示词所在的文件夹（相对于 ComfyUI/input，即 `input/batch_prompts`） |
-| `current_number` | 当前编号 | INT | `0` | 从第几个文件开始（配合右键菜单的递增/递减/随机） |
-| `recursive` | 递归扫描子文件夹 | BOOLEAN | `True` | ✅ 开：包含所有子目录<br>❌ 关：只读根目录 |
-| `reverse_order` | 倒序排列文件 | BOOLEAN | `False` | ✅ 开：从后往前读（Z→A）<br>❌ 关：正常顺序（A→Z） |
-| `file_pattern` | 文件名过滤模式 | STRING | `*.txt` | 通配符，如 `SFW_*.txt`, `*_v2.txt` |
-| `output_folder` | 输出目录 | STRING | `output/` | 图片保存位置（用于跳过检查） |
+### Requirements & compatibility
 
-### 可选输入
+- Any recent ComfyUI release (custom node API is stable).
+- Python ≥ 3.10 (tracks ComfyUI mainline).
+- No third-party runtime deps (`requirements.txt` is an empty comment file); only ComfyUI's bundled `torch` is used.
+- Since v2.1.1, paths are confined: `folder_path` is relative to `ComfyUI/input/`, `log_folder` to `ComfyUI/user/`, `output_folder` to `ComfyUI/output/`. Legacy values starting with `input/...`, `user/...`, or `output/...` keep working by automatic prefix stripping.
+- Runs on any device ComfyUI supports (CPU / CUDA / MPS); the node itself is device-agnostic.
 
-| 英文参数名 | 中文含义 | 类型 | 默认值 | 使用说明 |
-|-----------|---------|------|--------|----------|
-| `skip_exists` | 跳过已存在的图片 | BOOLEAN | `False` | ✅ 开：不重复生成同名图片 |
+### Usage examples
 
-### 输出口
-
-| 英文输出口 | 中文含义 | 类型 | 用途 |
-|-----------|---------|------|------|
-| `conditioning` | 条件编码 | CONDITIONING | 连到 KSampler |
-| `filename` | 文件名 | STRING | 可连到 Save Image 的 `filename_prefix` |
-| `index` | 索引号 | INT | 当前是第几个文件（从 0 开始） |
-| `total_count` | 总文件数 | INT | 总共扫描到多少个文件 |
-
-### 💡 快速记忆
-
-- **核心参数**：`folder_path`（哪里找）→ `current_number`（从哪开始）→ `conditioning`（输出）
-- **常用开关**：`recursive`（要不要扫子目录）、`reverse_order`（要不要倒着读）
-- **高级功能**：`file_pattern`（筛选特定文件）、`skip_exists`（跳过已生成的）、`enable_logging`（日志记录，自动跳过已处理）
-
-> ℹ️ **为什么参数是英文？** ComfyUI 生态中，自定义节点的参数名与显示名通常保持英文，这是行业标准做法，方便全球用户交流和资源共享。
-
-> 💡 **新特性提示**：v2.1 新增外置日志记录，自动跳过已处理文件！v2.0 新增通配符过滤、跳过已存在、元数据输出等功能！
-> 无第三方依赖，仅需 ComfyUI 自带的 PyTorch 环境。
-
-## 使用方法
-
-### 基础用法
-
-1. 准备提示词文件夹（如 `ComfyUI\input\batch_prompts\SFW`，须位于 ComfyUI/input 目录内），每个提示词一个 `.txt` 文件：
-
-   ```
-   positive: 一位成熟的大学教授站在讲台上
-   negative: 模糊，低质量
-   ```
-
-   也可以只写正文（没有 `positive:` 前缀时整段作为正向提示词）。
-
-2. 添加节点并连线：
-
-   ```
-   [CLIP Loader] ──clip──> [BatchPromptLoader] ──conditioning──> [KSampler → ...]
-   ```
-
-3. 设置 `folder_path` 为提示词文件夹路径，`current_number` 初始为 `0`。
-
-4. 在 `current_number` 上右键，选择 **"递增值"**（或递减/随机）。
-
-5. 每次点击 Queue，节点会自动读取下一个提示词并编码。
-
-### 文件排序说明
-
-- 文件按路径**字典序**（不区分大小写）排列，即先按英文字母 A→Z，再按数字逐位比较（如 `10.txt` 排在 `2.txt` 之前，因为字符 `"1"` 排在 `"2"` 之前）
-- 开启 `recursive` 时，子文件夹的文件会**排在其父文件夹文件之后**（按子文件夹名的字典序）
-- 开启 `reverse_order` 可对整个文件列表倒序
-
-### 高级功能 1：通配符过滤
-
-通过 `file_pattern` 参数过滤特定名称的文件：
-
-- `*.txt` - 所有 txt 文件（默认）
-- `SFW_*.txt` - 以 `SFW_` 开头的文件
-- `*_v2.txt` - 以 `_v2.txt` 结尾的文件
-- `prompt_*.txt` - 以 `prompt_` 开头的文件
-
-示例：文件夹中有 `prompt_v1_a.txt`, `prompt_v1_b.txt`, `prompt_v2_a.txt`，设置 `file_pattern = "prompt_v2_*.txt"` 只会读取 v2 版本的文件。
-
-### 高级功能 2：跳过已存在的图片
-
-1. 设置 `output_folder` 为你的输出目录（如 `output/`）
-2. 开启 `skip_exists` 开关
-3. 节点会检查输出目录中是否存在与当前提示词文件同名的图片
-4. 如果存在，直接跳过不生成，返回空 conditioning
-
-工作流程：
-```
-提示词文件：prompt_001.txt → 检查 output/prompt_001.png 是否存在
-如果存在 → 跳过
-如果不存在 → 正常生成
-```
-
-⚠️ **注意**：跳过后会返回空 conditioning，需要在后续节点处理这种情况（或使用 Switch 节点分流）。
-
-### 高级功能 3：使用元数据输出
-
-- `filename` - 可以连接到 Save Image 的 `filename_prefix`，实现按文件名保存
-- `index` - 可以用于显示进度或调试
-- `total_count` - 显示总共有多少个文件
-
-### 高级功能 4：外置日志记录（自动跳过已处理）
-
-> 💡 **解决什么问题？** 批量生成 100 个提示词，跑到一半意外中断。重新运行时，如果不加处理会重复生成前面已完成的图片。开启日志记录后，节点会**记住哪些文件已经处理过，下次自动跳过**。
-
-#### 使用步骤
-
-1. 开启 `enable_logging` 开关
-2. （可选）设置 `log_folder` 为日志存放位置，默认在 `ComfyUI/user/default/batch_prompt_logs`
-3. 正常批量运行。每次节点成功编码一个提示词后，会自动在日志文件夹写入一个 JSON 文件
-4. 中断后重新运行，节点读取日志，**自动跳过已处理的文件**，只处理剩余文件
-5. 全部处理完后，再次运行会提示"所有提示词已处理完成"（输出口 filename 返回 `ALL_DONE`）
-
-#### 日志文件说明
-
-- 每个已处理的提示词文件对应一个 JSON 日志文件，文件名与提示词文件对应（如 `子目录_提示词A.txt` → `子目录_提示词A.json`）
-- 日志内容示例：
-
-  ```json
-  {
-    "prompt_file": "子目录/提示词A.txt",
-    "source_dir": "C:\\ComfyUI\\input\\batch_prompts",
-    "index": 0,
-    "total_count": 100,
-    "processed_at": "2026-08-25 10:30:00"
-  }
-  ```
-
-#### 如何清除 / 选择性删除日志？
-
-- **全部清除**：直接删除整个 `log_folder` 文件夹（或其中的所有 JSON 文件），下次运行从头开始
-- **选择性删除**：想重新生成某个提示词，只需删除对应的那个 JSON 日志文件即可
-- **自动清空**：开启 `clear_log_on_start`，则每次启动 ComfyUI 后的第一次运行会自动清空日志（适合换了一批新提示词、想整体重来）
-
-⚠️ **注意**：
-- 日志按"节点成功编码该提示词"记录。若图片生成中途失败（如显存不足），请手动删除对应日志条目后重试
-- 不同 `folder_path` 的日志会按来源目录自动区分，互不干扰
-- `skip_exists`（按图片是否存在判断）与 `enable_logging`（按日志判断）是两套独立机制，可同时开启
-
-### 控制台输出示例
+**Basic wiring:**
 
 ```
-[BatchPromptLoader] Fixed: 0 (prompt_001.txt...)
-[BatchPromptLoader] ✓ [1/50] prompt_001.txt
-[BatchPromptLoader] Increment: 0 → 1 (prompt_002.txt...)
-[BatchPromptLoader] ✓ [2/50] prompt_002.txt
-[BatchPromptLoader] ⏭️ 跳过已存在：prompt_001.png
+[Load CLIP] ──CLIP──▶ [Batch Prompt Loader] ──conditioning──▶ [KSampler positive]
+                                                  └─filename──▶ [Save Image.filename_prefix]
 ```
 
-## 提示词文件格式
+**TXT format:**
 
-- 扩展名由 `file_pattern` 决定（默认 `.txt`）
-- 可选分段：`positive:` 开头为正向提示词段，`negative:` 开头为负向提示词段
-- 分段行之后的内容会续接到对应段
-- 无 `positive:` 前缀时，整个文件内容作为正向提示词
+```text
+positive: a wise professor standing on a lecture podium, soft daylight
+negative: blurry, low quality, deformed
+```
 
-## 常见问题
+Without a `positive:` header, the whole file body is treated as positive.
 
-### Q: 输出的 `filename` 怎么用？
+**File ordering:**
 
-A: 可以连接到 Save Image 节点的 `filename_prefix`，实现按提示词文件名保存图片。
+- Files are sorted lexicographically (case-insensitive); files in subdirectories come after their parent directory's files.
+- `reverse_order = true` reverses the entire list.
+- `file_pattern = "SFW_*.txt"` selects only files with a specific prefix.
 
-### Q: 跳过后图片会空白吗？
+**Resume after interruption (external log):**
 
-A: 会返回空 conditioning，KSampler 可能生成黑图或随机噪声。建议配合 Switch 节点，只在需要时生成。
+1. Enable `enable_logging`.
+2. Queue normally; one JSON per successfully encoded file is written to `log_folder`.
+3. Re-run after an interruption — already-processed files are auto-skipped; when everything is done, `filename` outputs `ALL_DONE`.
+4. To re-run one prompt, delete its single JSON; to start over, empty `log_folder` or enable `clear_log_on_start`.
 
-### Q: 为什么找不到文件？
+### FAQ
 
-A: 检查 `folder_path` 是否正确，确认文件夹内是否有符合 `file_pattern` 的 `.txt` 文件。错误信息会显示在控制台和节点红色提示中。
+**Q1: Why can't I find the node in the menu?**
+A: Make sure the repo sits at `ComfyUI/custom_nodes/ComfyUI-BatchPromptLoader/` with `__init__.py` directly inside; restart ComfyUI and check the `Import times for custom nodes` section of the startup log. If it still does not appear, look for a Python import error in the ComfyUI console.
 
-### Q: 如何查看加载了多少个文件？
+**Q2: How do I use `filename` / `index` / `total_count`?**
+A: Wire `filename` to Save Image `filename_prefix` to name outputs after the prompt file; wire `index` and `total_count` to Display Int for progress, or into a Switch/condition branch.
 
-A: 控制台会输出 `[n/total] filename`，或者将 `total_count` 输出口连接到 Display Int 节点查看。
+**Q3: Will skipped files produce black images?**
+A: A skipped file returns an empty `CONDITIONING`, so KSampler may produce a black or noisy image. Prefer a Switch node that only routes to sampling when generation is actually needed, or rely on downstream Save Image not being triggered.
 
-## Changelog
+**Q4: Can I delete the JSON files in the log folder directly?**
+A: Yes. Each processed prompt file has one JSON (the filename is the sanitized relative prompt path). Deleting one JSON re-runs that prompt; emptying the whole `log_folder` restarts from scratch.
 
-### v2.1.2 (2026-09-02)
+**Q5: Why does an absolute path fail?**
+A: To prevent path traversal, `folder_path` / `log_folder` / `output_folder` are confined to `ComfyUI/input` / `ComfyUI/user` / `ComfyUI/output` respectively. Provide a path relative to the corresponding base directory, e.g. `batch_prompts`.
 
-- 🔒 **路径范围收窄**：`folder_path` 限制于 **ComfyUI/input**、`log_folder` 限制于 **ComfyUI/user**、`output_folder` 限制于 **ComfyUI/output**（此前为整个 ComfyUI 根目录）。越界路径（含基准外绝对路径、`..` 逃逸、跨兄弟目录）一律拒绝。
-- ♻️ 默认值相应调整：`folder_path` 默认 `batch_prompts`（即 `input/batch_prompts`），老值 `input/...`、`user/...`、`output/...` 会自动剥离前缀继续可用。
-- 📝 三个路径控件新增 tooltip 提示其相对基准目录。
+### Docs & governance
 
-### v2.1 (2026-08-25)
+- [CHANGELOG.md](CHANGELOG.md) — release history.
+- [docs/agent-contract.md](docs/agent-contract.md) — automation agent contract.
+- [docs/release-governance.md](docs/release-governance.md) — release & rollback policy (tag format, draft release, SHA256SUMS).
+- [AGENTS.md](AGENTS.md) — public condensed agent contract.
 
-- ✨ 新增外置日志记录 (`enable_logging`, `log_folder`, `clear_log_on_start`)
-- ✨ 记录已处理的提示词文件，下次运行自动跳过（中断后重跑不重复）
-- ✨ 日志文件夹可外置清除 / 选择性删除（每个文件一个 JSON）
-- ✨ 全部处理完提示"所有提示词已处理完成"（filename 返回 `ALL_DONE`）
+### Contributing, security & support
 
-### v2.0 (2026-08-23)
+- Issues and PRs are welcome; read `docs/release-governance.md` for the release policy before opening one.
+- Report security issues via a private channel to the maintainer; do not disclose exploitable details in a public Issue.
+- Support is via GitHub Issues; no commercial SLA.
+- Releases are cut by the maintainer pushing a `vMAJOR.MINOR.PATCH` tag, which triggers [release.yml](.github/workflows/release.yml) to produce a draft release with a source archive and SHA256SUMS, then published after manual review.
 
-- ✨ 新增通配符过滤 (`file_pattern`)
-- ✨ 新增跳过已存在图片功能 (`skip_exists`, `output_folder`)
-- ✨ 新增元数据输出 (`filename`, `index`, `total_count`)
-- ✨ 增强错误提示（区分路径不存在/文件夹为空）
-- ✨ 控制台实时显示当前文件进度
-
-## 许可证
+### License
 
 [MIT](LICENSE)
