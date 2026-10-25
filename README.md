@@ -37,31 +37,31 @@ ComfyUI-BatchPromptLoader 是一个面向"多提示词 × 多张图"批量生成
 
 **1. 节点菜单（右键画布 → 添加节点 → batch_tools → Batch Prompt Loader）**
 
-![Node menu](docs/assets/readme-comfyui-batchpromptloader-1.png)
+![Node menu](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-1.png)
 
 在 ComfyUI 画布空白处右键，依次进入 `添加节点 → batch_tools → Batch Prompt Loader` 即可添加本节点。
 
 **2. 节点属性（所有输入与输出端口）**
 
-![Node properties](docs/assets/readme-comfyui-batchpromptloader-2.png)
+![Node properties](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-2.png)
 
 节点输入：`clip`、`folder_path`、`current_number`、`recursive`、`reverse_order`、`file_pattern`、`output_folder`、`enable_logging`、`log_folder`、`clear_log_on_start`，以及可选输入 `skip_exists`；输出：`conditioning`、`filename`、`index`、`total_count`。
 
 **3. 空工作流（ComfyUI 启动后默认画布）**
 
-![Empty workflow](docs/assets/readme-comfyui-batchpromptloader-3.png)
+![Empty workflow](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-3.png)
 
 节点以纯 custom node 形式加载，不自带工作流模板；从空画布右键添加即可。
 
 **4. 提示词文件夹布局（放在 `ComfyUI/input/` 下）**
 
-![Prompt folder layout](docs/assets/readme-comfyui-batchpromptloader-4.png)
+![Prompt folder layout](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-4.png)
 
 每个 `.txt` 一个提示词；用 `positive:` / `negative:` 段拆分正负向。`folder_path` 填相对于 `input/` 的目录名，如 `batch_prompts`。
 
 **5. 数据流架构**
 
-![Architecture](docs/assets/readme-comfyui-batchpromptloader-5.svg)
+![Architecture](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-5.svg)
 
 提示词文件夹 → 本节点（读 TXT + CLIP 编码）→ `conditioning` 接 KSampler；`filename` 元数据可接 Save Image 的 `filename_prefix`。
 
@@ -192,31 +192,31 @@ ComfyUI-BatchPromptLoader is a real ComfyUI custom node (with `__init__.py` and 
 
 **1. Node menu (right-click canvas → Add Node → batch_tools → Batch Prompt Loader)**
 
-![Node menu](docs/assets/readme-comfyui-batchpromptloader-1.png)
+![Node menu](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-1.png)
 
 Right-click an empty canvas area and choose `Add Node → batch_tools → Batch Prompt Loader`.
 
 **2. Node properties (all inputs and outputs)**
 
-![Node properties](docs/assets/readme-comfyui-batchpromptloader-2.png)
+![Node properties](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-2.png)
 
 Inputs: `clip`, `folder_path`, `current_number`, `recursive`, `reverse_order`, `file_pattern`, `output_folder`, `enable_logging`, `log_folder`, `clear_log_on_start`, plus optional `skip_exists`. Outputs: `conditioning`, `filename`, `index`, `total_count`.
 
 **3. Empty workflow (default canvas after ComfyUI starts)**
 
-![Empty workflow](docs/assets/readme-comfyui-batchpromptloader-3.png)
+![Empty workflow](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-3.png)
 
 The node loads as a plain custom node and ships no workflow template — add it from an empty canvas.
 
 **4. Prompt folder layout (place under `ComfyUI/input/`)**
 
-![Prompt folder layout](docs/assets/readme-comfyui-batchpromptloader-4.png)
+![Prompt folder layout](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-4.png)
 
 One `.txt` per prompt; split positive/negative with `positive:` / `negative:` sections. `folder_path` is a directory name relative to `input/`, e.g. `batch_prompts`.
 
 **5. Data-flow architecture**
 
-![Architecture](docs/assets/readme-comfyui-batchpromptloader-5.svg)
+![Architecture](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-5.svg)
 
 Prompt folder → this node (read TXT + CLIP encode) → `conditioning` to KSampler; `filename` metadata can feed Save Image `filename_prefix`.
 
