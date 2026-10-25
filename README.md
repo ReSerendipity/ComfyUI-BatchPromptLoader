@@ -53,13 +53,7 @@ ComfyUI-BatchPromptLoader 是一个面向"多提示词 × 多张图"批量生成
 
 节点以纯 custom node 形式加载，不自带工作流模板；从空画布右键添加即可。
 
-**4. 提示词文件夹布局（放在 `ComfyUI/input/` 下）**
-
-![Prompt folder layout](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-4.png)
-
-每个 `.txt` 一个提示词；用 `positive:` / `negative:` 段拆分正负向。`folder_path` 填相对于 `input/` 的目录名，如 `batch_prompts`。
-
-**5. 数据流架构**
+**4. 数据流架构**
 
 ![Architecture](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-5.svg)
 
@@ -208,13 +202,7 @@ Inputs: `clip`, `folder_path`, `current_number`, `recursive`, `reverse_order`, `
 
 The node loads as a plain custom node and ships no workflow template — add it from an empty canvas.
 
-**4. Prompt folder layout (place under `ComfyUI/input/`)**
-
-![Prompt folder layout](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-4.png)
-
-One `.txt` per prompt; split positive/negative with `positive:` / `negative:` sections. `folder_path` is a directory name relative to `input/`, e.g. `batch_prompts`.
-
-**5. Data-flow architecture**
+**4. Data-flow architecture**
 
 ![Architecture](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-5.svg)
 
