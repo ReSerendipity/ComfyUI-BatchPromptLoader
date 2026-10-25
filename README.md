@@ -6,7 +6,7 @@ A ComfyUI custom node that batch-loads and encodes TXT prompt files from a folde
 
 [![Language: Python](https://img.shields.io/badge/language-Python-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Last commit](https://img.shields.io/github/last-commit/ReSerendipity/ComfyUI-BatchPromptLoader)](https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader/commits/main)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ReSerendipity/.github/blob/main/CONTRIBUTING.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > 📦 仓库当前**暂无正式 Release / tag**；发布流程见下方"文档与治理"。
