@@ -4,12 +4,12 @@ A ComfyUI custom node that batch-loads and encodes TXT prompt files from a folde
 
 > 从文件夹批量加载并编码 TXT 提示词的 ComfyUI 自定义节点，支持固定/递增/递减/随机四种索引、递归扫描、通配符过滤、跳过已处理与外置日志。
 
-[![Release workflow](https://img.shields.io/github/actions/workflow/status/ReSerendipity/ComfyUI-BatchPromptLoader/release.yml?branch=main&label=release&logo=github)](https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader/actions/workflows/release.yml)
-[![Latest Release](https://img.shields.io/github/v/release/ReSerendipity/ComfyUI-BatchPromptLoader?display_name=tag&sort=semver)](https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader/releases)
 [![Language: Python](https://img.shields.io/badge/language-Python-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Last commit](https://img.shields.io/github/last-commit/ReSerendipity/ComfyUI-BatchPromptLoader)](https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader/commits/main)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+> 📦 仓库当前**暂无正式 Release / tag**；发布流程见下方"文档与治理"。
 
 **[中文](#中文) · [English](#english)**
 
@@ -24,8 +24,8 @@ ComfyUI-BatchPromptLoader 是一个面向"多提示词 × 多张图"批量生成
 ### 核心特性
 
 - 📁 **递归扫描**：自动扫描文件夹及所有子目录中的 `.txt` 文件。
-- 🔍 **通配符过滤**：`file_pattern` 支持 `*.txt`、`SFW_*.txt`、`*_v2.txt` 等文件名模式。
-- 🎲 **四种索引模式**：`fixed` / `increment` / `decrement` / `random`，由 `Current Index` 控件的"生成后控制"菜单直接切换。
+- 🔍 **通配符过滤**：`file_pattern` 支持 `*.txt`、`character_*.txt`、`*_v2.txt` 等文件名模式。
+- 🎲 **四种索引模式**：`fixed` / `increment` / `decrement` / `random`，由 `Current Index` 控件的"生成后控制"菜单直接切换（ComfyUI 原生菜单把该项显示为 `randomize`，对应节点值 `random`）。
 - ♻️ **内置自动递增**：每次 Queue 后自动推进索引，并在重启 ComfyUI 后从上次位置继续。
 - ⏭️ **跳过已存在**：`skip_exists` + `output_folder` 可按输出目录同名图片跳过，避免重复渲染。
 - 📋 **外置日志记录**：`enable_logging` 把已处理文件写到 `user/default/batch_prompt_logs/` 下的 JSON，中断后重跑自动跳过；可整目录清空或按单文件删除。
@@ -124,7 +124,7 @@ negative: blurry, low quality, deformed
 
 - 文件按路径字典序（不区分大小写）排列；子目录中的文件排在其父目录文件之后。
 - `reverse_order = true` 对整个列表倒序。
-- `file_pattern = "SFW_*.txt"` 可只挑出特定前缀的文件。
+- `file_pattern = "character_*.txt"` 可只挑出特定前缀的文件。
 
 **中断续跑（外置日志）：**
 
@@ -179,8 +179,8 @@ ComfyUI-BatchPromptLoader is a real ComfyUI custom node (with `__init__.py` and 
 ### Features
 
 - 📁 **Recursive scan**: walks the folder and every subdirectory for `.txt` files.
-- 🔍 **Wildcard filter**: `file_pattern` supports `*.txt`, `SFW_*.txt`, `*_v2.txt`, etc.
-- 🎲 **Four index modes**: `fixed` / `increment` / `decrement` / `random`, switched directly from the `Current Index` control's "control after generate" menu.
+- 🔍 **Wildcard filter**: `file_pattern` supports `*.txt`, `character_*.txt`, `*_v2.txt`, etc.
+- 🎲 **Four index modes**: `fixed` / `increment` / `decrement` / `random`, switched directly from the `Current Index` control's "control after generate" menu (ComfyUI's native menu labels this item `randomize`, which maps to the node value `random`).
 - ♻️ **Built-in auto-advance**: the index advances per Queue and resumes where it left off after a ComfyUI restart.
 - ⏭️ **Skip existing**: `skip_exists` + `output_folder` skips files whose output image already exists.
 - 📋 **External progress log**: `enable_logging` writes one JSON per processed file under `user/default/batch_prompt_logs/`; re-runs after an interruption auto-skip completed files.
@@ -279,7 +279,7 @@ Without a `positive:` header, the whole file body is treated as positive.
 
 - Files are sorted lexicographically (case-insensitive); files in subdirectories come after their parent directory's files.
 - `reverse_order = true` reverses the entire list.
-- `file_pattern = "SFW_*.txt"` selects only files with a specific prefix.
+- `file_pattern = "character_*.txt"` selects only files with a specific prefix.
 
 **Resume after interruption (external log):**
 
