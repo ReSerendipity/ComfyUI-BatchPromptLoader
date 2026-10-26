@@ -35,23 +35,23 @@ ComfyUI-BatchPromptLoader 是一个面向"多提示词 × 多张图"批量生成
 
 ### 展示
 
-**1. 节点菜单（右键画布 → 添加节点 → batch_tools → Batch Prompt Loader）**
+**1. 已配置节点与连线（`Load CLIP` → `Batch Prompt Loader`）**
 
-![Node menu](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-1.png)
+![Configured node](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-1-20261026.png)
 
-在 ComfyUI 画布空白处右键，依次进入 `添加节点 → batch_tools → Batch Prompt Loader` 即可添加本节点。
+`folder_path` 指向 `prompts/`（含 4 个 TXT），`current_number` 的"生成后控制"设为 `increment`，`enable_logging` 开启；`Load CLIP` 的 CLIP 输出已连到本节点的 `clip` 输入。
 
-**2. 节点属性（所有输入与输出端口）**
+**2. 入队与自动递增（每次 Queue 索引 +1）**
 
-![Node properties](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-2.png)
+![Queue and increment](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-2-20261026.png)
 
-节点输入：`clip`、`folder_path`、`current_number`、`recursive`、`reverse_order`、`file_pattern`、`output_folder`、`enable_logging`、`log_folder`、`clear_log_on_start`，以及可选输入 `skip_exists`；输出：`conditioning`、`filename`、`index`、`total_count`。
+点击"运行"后右上角提示"任务添加到队列"；`current_number` 已从 `0` 自动推进到 `1`，无需额外种子/计数器节点。
 
-**3. 空工作流（ComfyUI 启动后默认画布）**
+**3. 执行历史与节点输出（真实 Queue 记录）**
 
-![Empty workflow](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-3.png)
+![Execution history](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-3-20261026.png)
 
-节点以纯 custom node 形式加载，不自带工作流模板；从空画布右键添加即可。
+队列历史显示 `success`；节点控制台输出 `[1/4] 001_professor.txt`，返回 `filename=001_professor.txt`、`index=0`、`total_count=4`，并在外置日志目录写入对应 JSON。
 
 **4. 数据流架构**
 
@@ -184,23 +184,23 @@ ComfyUI-BatchPromptLoader is a real ComfyUI custom node (with `__init__.py` and 
 
 ### Screenshots
 
-**1. Node menu (right-click canvas → Add Node → batch_tools → Batch Prompt Loader)**
+**1. Configured node with wiring (`Load CLIP` → `Batch Prompt Loader`)**
 
-![Node menu](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-1.png)
+![Configured node](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-1-20261026.png)
 
-Right-click an empty canvas area and choose `Add Node → batch_tools → Batch Prompt Loader`.
+`folder_path` points to `prompts/` (4 TXT files), `current_number` "control after generate" is set to `increment`, `enable_logging` is on; `Load CLIP.CLIP` is wired into this node's `clip` input.
 
-**2. Node properties (all inputs and outputs)**
+**2. Queue enqueued and auto-increment (index advances per Queue)**
 
-![Node properties](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-2.png)
+![Queue and increment](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-2-20261026.png)
 
-Inputs: `clip`, `folder_path`, `current_number`, `recursive`, `reverse_order`, `file_pattern`, `output_folder`, `enable_logging`, `log_folder`, `clear_log_on_start`, plus optional `skip_exists`. Outputs: `conditioning`, `filename`, `index`, `total_count`.
+After clicking Run, a toast confirms "task added to queue"; `current_number` has advanced from `0` to `1` automatically — no extra seed/counter node needed.
 
-**3. Empty workflow (default canvas after ComfyUI starts)**
+**3. Execution history and node output (real Queue record)**
 
-![Empty workflow](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-3.png)
+![Execution history](https://gcore.jsdelivr.net/gh/ReSerendipity/ComfyUI-BatchPromptLoader@main/docs/assets/readme-comfyui-batchpromptloader-3-20261026.png)
 
-The node loads as a plain custom node and ships no workflow template — add it from an empty canvas.
+Queue history shows `success`; the node console prints `[1/4] 001_professor.txt`, returns `filename=001_professor.txt`, `index=0`, `total_count=4`, and writes a corresponding JSON into the external log folder.
 
 **4. Data-flow architecture**
 
