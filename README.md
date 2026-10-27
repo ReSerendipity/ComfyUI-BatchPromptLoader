@@ -9,6 +9,7 @@ A ComfyUI custom node that batch-loads and encodes TXT prompt files from a folde
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ReSerendipity/.github/blob/main/CONTRIBUTING.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Governance](https://img.shields.io/badge/governance-ReSerendipity%2F.github-blue)](https://github.com/ReSerendipity/.github/tree/main/governance)
+[![CI](https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader/actions/workflows/ci.yml/badge.svg)](https://github.com/ReSerendipity/ComfyUI-BatchPromptLoader/actions/workflows/ci.yml)
 
 > 📦 仓库当前**暂无正式 Release / tag**；发布流程见下方"文档与治理"。
 
