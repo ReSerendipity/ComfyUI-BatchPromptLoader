@@ -14,12 +14,18 @@ traversal:
 Absolute paths pointing outside the corresponding base and relative paths escaping
 via '..' are rejected.
 """
-import os
-import torch
-import random as random_module
-import json
 import fnmatch
+import json
+import os
+import random as random_module
 import time
+
+import torch
+
+
+class BatchPromptLoaderError(RuntimeError):
+    """Raised when a user-supplied path, prompt file, or log entry cannot be used."""
+
 
 _global_mode_state = {}
 _log_cleared_this_session = False
@@ -38,7 +44,7 @@ def _confine_to_base(base_dir, user_path, label):
         candidate = os.path.join(base_dir, user_path or "")
     candidate_real = os.path.normcase(os.path.realpath(candidate))
     if candidate_real != base_real and not candidate_real.startswith(base_real + os.sep):
-        raise Exception(
+        raise BatchPromptLoaderError(
             f"[BatchPromptLoader] '{label}' must resolve to a location inside:\n"
             f"  {base_real}\n"
             f"Resolved path: {candidate_real}\n"
@@ -88,7 +94,8 @@ def _load_log(log_dir, source_dir):
                     entry = json.load(f)
                 if entry.get('source_dir') == source_dir and entry.get('prompt_file'):
                     processed.add(entry['prompt_file'])
-            except Exception:
+            except Exception as e:
+                print(f"[BatchPromptLoader] Warning: skipping unreadable log file {fn}: {e}")
                 continue
     except Exception as e:
         print(f"[BatchPromptLoader] Warning: failed to read log: {e}")
@@ -203,13 +210,13 @@ class BatchPromptReaderWithClip:
         )
 
         if not os.path.exists(target_dir):
-            raise Exception(
+            raise BatchPromptLoaderError(
                 f"[BatchPromptLoader] Folder does not exist: {target_dir}\n\n"
                 f"Please check the 'folder_path' value."
             )
 
         if not os.path.isdir(target_dir):
-            raise Exception(
+            raise BatchPromptLoaderError(
                 f"[BatchPromptLoader] Not a directory: {target_dir}\n\n"
                 f"Please make sure this is a valid folder."
             )
@@ -251,10 +258,12 @@ class BatchPromptReaderWithClip:
                 txt_files.reverse()
 
         except Exception as e:
-            raise Exception(f"[BatchPromptLoader] Failed to read folder: {target_dir}\n\nError: {str(e)}")
+            raise BatchPromptLoaderError(
+                f"[BatchPromptLoader] Failed to read folder: {target_dir}\n\nError: {e}"
+            ) from e
 
         if len(txt_files) == 0:
-            raise Exception(
+            raise BatchPromptLoaderError(
                 f"[BatchPromptLoader] No matching files in folder: {target_dir}\n\n"
                 f"Search pattern: {search_pattern}\n\n"
                 f"Please add matching TXT files or adjust the filename pattern."
@@ -281,7 +290,8 @@ class BatchPromptReaderWithClip:
                                     data = json.load(lf)
                                 if isinstance(data, dict) and 'prompt_file' in data:
                                     os.remove(log_path)
-                            except Exception:
+                            except Exception as e:
+                                print(f"[BatchPromptLoader] Warning: skipping unreadable log file {fn}: {e}")
                                 continue
                     _log_cleared_this_session = True
                     print("[BatchPromptLoader] Cleared log folder (first run this session)")
@@ -452,4 +462,4 @@ class BatchPromptReaderWithClip:
             )
 
         except Exception as e:
-            raise Exception(f"Failed to read file: {selected_file}\nError: {str(e)}")
+            raise BatchPromptLoaderError(f"Failed to read file: {selected_file}\nError: {e}") from e

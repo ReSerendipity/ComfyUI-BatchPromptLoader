@@ -29,11 +29,11 @@ jobs:
       - name: py_compile（语法编译）
         run: python -m py_compile __init__.py batch_prompt_loader.py
 
-      # 规则集刻意收窄到 E9 / F63 / F7 / F82（语法错误、无效比较、
-      # do-while 误用、未定义名）。默认规则集会报 21 处存量风格类
-      # 建议项（盲 except、try-raise-raise 等），不为上 CI 一次性
-      # 重写节点代码；待后续专门清理后再扩规则。
-      - name: ruff check（语法错误与真 bug 级规则）
+      # 规则集在 bug 级（E9 / F63 / F7 / F82 随 E/F 全量包含）之上，
+      # 扩至 TRY002（自定义异常替代裸 Exception）、S112（静默 continue
+      # 必须留痕）、RUF010（f-string 转换旗标）、I001（import 排序）。
+      # E501（行宽）与 BLE001（节点刻意兜底的盲 except，9 处）不纳入。
+      - name: ruff check（语法错误、真 bug 级与可静态清理规则）
         run: |
           pip install --quiet --disable-pip-version-check ruff
-          ruff check --select E9,F63,F7,F82 .
+          ruff check --select E,F,W,TRY002,S112,RUF010,I001 --ignore E501 .
