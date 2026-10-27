@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: 静态检查（py_compile + ruff 关键规则）
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 这是 ComfyUI 自定义节点：torch / ComfyUI 运行时由宿主提供，
+      # CI 不装 torch（约 800 MB），因此无法 import 节点做单测，
+      # 用静态检查守住「语法可编译 + 无真 bug 级问题」两层。
+      - name: py_compile（语法编译）
+        run: python -m py_compile __init__.py batch_prompt_loader.py
+
+      # 规则集刻意收窄到 E9 / F63 / F7 / F82（语法错误、无效比较、
+      # do-while 误用、未定义名）。默认规则集会报 21 处存量风格类
+      # 建议项（盲 except、try-raise-raise 等），不为上 CI 一次性
+      # 重写节点代码；待后续专门清理后再扩规则。
+      - name: ruff check（语法错误与真 bug 级规则）
+        run: |
+          pip install --quiet --disable-pip-version-check ruff
+          ruff check --select E9,F63,F7,F82 .
