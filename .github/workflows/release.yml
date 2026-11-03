@@ -30,7 +30,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout tagged commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build source archive and SHA256SUMS
         env:
