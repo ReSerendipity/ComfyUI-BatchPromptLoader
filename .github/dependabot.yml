@@ -1,6 +1,7 @@
 version: 2
 # §12.5 通用工程件：依赖更新基线（由 ReSerendipity/.github governance/templates 派生）。
 # cooldown.default-days >= 7 为防投毒窗口下限；安全补丁不受冷却影响。
+# github-actions 生态的 cooldown 只支持 default-days（写 semver-* 会判配置非法）。
 # minor/patch 合并为单个 PR；major 各自单开，逐个评审。
 updates:
   - package-ecosystem: github-actions
@@ -9,9 +10,6 @@ updates:
       interval: monthly
     cooldown:
       default-days: 7
-      semver-major-days: 30
-      semver-minor-days: 7
-      semver-patch-days: 3
     open-pull-requests-limit: 5
     labels: [dependencies]
     groups:
